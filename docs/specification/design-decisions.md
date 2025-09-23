@@ -23,9 +23,10 @@
 - **Local meta-storage** on each node's OS disk (not replicated)
 - **Device-mapper based** allocation with node-type specific sizing
 - **Separation of concerns**: 
-  - RAW WAL device for maximum performance
+  - RAW WAL device for maximum performance (sequential writes)
   - ext4 filesystem for complex mapping structures (data nodes only)
 - **Metadata placement**: Stored at the beginning of the storage device for optimal performance
+- **No recursion**: Meta-storage managed separately from data volume I/O path
 - **State persistence**: Critical configuration stored locally (admin backup required)
 
 ### Configuration Philosophy
@@ -40,3 +41,9 @@
 - **VLAN segregation** for cluster communication (mandatory)
 - **Localhost-only** communication between NBD client and engine (no VLAN overhead)
 - Clear separation of management, cluster, and client traffic
+
+### Implementation Approach
+- **Pure Go implementation** where possible
+- **Minimal external dependencies** for core functionality
+- **Practical V1 approach**: Use external tools where Go libraries are immature
+- **Long-term vision**: Migrate to pure Go implementation as libraries mature
