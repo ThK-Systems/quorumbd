@@ -11,7 +11,7 @@
 ### Volume Management
 - **Multiple independent volumes** (GlusterFS-like model)
 - Each volume maps to a dedicated NBD device
-- **Strict separation**: Meta-Storage vs. Data-Volumes
+- **Strict separation**: Data volumes only (no meta-volumes)
 - **Final output**: Ready-to-use LVM Thin Pools for Proxmox
 - Engine manages volume-to-NBD mapping in state file
 - **Single engine process** handles all volumes
@@ -54,6 +54,7 @@ The engine automatically finds and uses available NBD devices:
 - **VG**: `qbd_vg_<volumename>`
 - **LV Types**: Thin Pool LV only
 - **Contents**: Thin-Pool-LV (exclusively for Proxmox VM data)
+- **No metadata storage**: All metadata handled by local meta-storage
 
 ### Administration Interface
 - **REST API** for volume management (create, resize, status)
