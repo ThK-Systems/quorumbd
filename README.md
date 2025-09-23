@@ -9,9 +9,12 @@ The system prioritizes **data consistency** above all else, while maintaining pe
 ## Key Specifications
 - **Implementation Language**: Go
 - **Node Scale**: 3 to 9 nodes (odd number required for consensus)
+- **Minimum Requirements**: At least 2 data nodes + 1 arbiter node
 - **Network Environment**: 1-2.5 Gigabit Ethernet
 - **Hardware Target**: Consumer-grade SSDs and hardware
-- **Node Types**: Flexible mix of Data Nodes (store data) and Arbiter Nodes (participate in voting only)
+- **Node Types**: 
+  - **Data Nodes**: Store actual block data (minimum 2 required)
+  - **Arbiter Nodes**: Participate in voting and store metadata only (GlusterFS-like model)
 - **Resource Constraints**: Maximum 300-400 MB RAM usage
 - **Version 1 Scope**: No erasure coding, primary integration with Proxmox
 
@@ -21,6 +24,7 @@ The system prioritizes **data consistency** above all else, while maintaining pe
 - **NBD-based block storage** with direct Proxmox integration
 - **Flexible node roles** supporting arbiters for resource-efficient operation
 - **Optimized for consumer SSDs** without enterprise hardware requirements
+- **Arbiter nodes store metadata** reducing storage requirements for consensus nodes
 
 ## Status
 *Early design phase - concept development in progress*
