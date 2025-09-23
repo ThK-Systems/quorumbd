@@ -6,11 +6,12 @@
 - Designed for **professional administrators** who understand cluster filesystems
 - No "idiot-proofing" - clear conventions and documentation over forced restrictions
 - Admin is treated as a partner in operations
+- **Admin responsibility**: Regular backups of local state on OS disk
 
 ### Storage Abstraction
 - **Network Block Device (NBD)** over filesystem-level implementation
 - Leverages existing Linux stack (LVM, thin provisioning) rather than reinventing storage management
-- **Proxmox integration** via LVM Thin Pool provisioned by the engine
+- **Proxmox integration via ready-to-use LVM Thin Pools** provisioned by the engine
 
 ### Cluster Management
 - **Arbiter nodes** as first-class concept from inception
@@ -19,15 +20,19 @@
 - Consensus mechanism must work with asymmetric node topologies and storage roles
 
 ### Metadata Architecture
-- **Dedicated Meta-Volume** for cluster-wide metadata (WAL, global LBA mapping)
-- **Separation of concerns**: Metadata operations isolated from data volume I/O path
-- **Prevents circular dependencies**: Metadata writes don't go through the WAL they manage
-- **Volume-based data**: Each data volume contains only user data blocks
+- **Local meta-storage** on each node's OS disk (not replicated)
+- **Device-mapper based** allocation with node-type specific sizing
+- **Separation of concerns**: 
+  - RAW WAL device for maximum performance
+  - ext4 filesystem for complex mapping structures (data nodes only)
+- **Metadata placement**: Stored at the beginning of the storage device for optimal performance
+- **State persistence**: Critical configuration stored locally (admin backup required)
 
 ### Configuration Philosophy
 - **Clear separation** between static configuration (`/etc/quorumbd/`) and dynamic state (`/var/lib/quorumbd/`)
-- Static configuration defines **what** (volumes, cluster layout)
-- Dynamic state tracks **how** (runtime mappings, device assignments)
+- Static configuration defines **what** (volumes, cluster layout, meta-storage sizing)
+- Dynamic state tracks **how** (runtime mappings, device assignments, final sizes)
+- **Local state criticality**: Engine state requires regular backups by admin
 - Engine maintains full control over its internal storage layout
 - Admin works with ready-to-use Thin Pools provided by the engine
 

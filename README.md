@@ -20,11 +20,15 @@ The system prioritizes **data consistency** above all else, while maintaining pe
 
 ## Architecture Highlights
 - **Multi-volume support** with independent LVM Thin Pools
+- **Ready-to-use LVM Thin Pools** exposed to Proxmox for immediate VM deployment
 - **Dedicated metadata volume** for cluster-wide management
 - **NBD-based block storage** with direct Proxmox integration
 - **Flexible node roles** supporting arbiters for resource-efficient operation
 - **Optimized for consumer SSDs** without enterprise hardware requirements
 - **Arbiter nodes store metadata** reducing storage requirements for consensus nodes
+
+## Proxmox Integration
+QuorumBD volumes are presented to Proxmox as **fully configured LVM Thin Pools**, allowing administrators to immediately create virtual machines without additional storage configuration.
 
 ## Status
 *Early design phase - concept development in progress*
