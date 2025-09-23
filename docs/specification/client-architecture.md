@@ -28,6 +28,13 @@ The engine automatically finds and uses available NBD devices:
 
 ### Local Meta-Storage Management
 
+#### Storage Disk Layout
+Storage SSD (e.g., /dev/sdb) contains:
+- Meta-storage area at beginning of disk
+- WAL section (RAW device via device-mapper)
+- Mapping section (ext4 filesystem via device-mapper)
+- Data area for NBD devices and user data
+
 #### Implementation Strategy
 - **Go-focused implementation** with minimal external dependencies
 - **Device-mapper integration** via Go libraries or syscalls
@@ -39,23 +46,23 @@ The engine automatically finds and uses available NBD devices:
 - **Node-type specific sizing** (from configuration):
   - Data Nodes: 20GB WAL + 40GB Mapping
   - Arbiter Nodes: 1GB WAL (no mapping)
-- **Persistent sizing**: Final sizes stored in local state
-- **Optimal placement**: Meta-storage allocated at beginning of storage device
+- **Persistent sizing**: Final sizes stored in local state on OS disk
+- **Optimal placement**: Meta-storage allocated at beginning of **storage SSD**
 
 #### Automated Setup Process
-1. **Storage allocation**: Engine manages raw storage areas programmatically
+1. **Storage allocation**: Engine manages raw storage areas on **storage SSD**
 2. **Device-mapper setup**: Creates `/dev/qb_meta_wal` and `/dev/qb_meta_map` devices
 3. **Filesystem creation**: Formats mapping area with ext4 (data nodes only)
-4. **Persistent configuration**: Stores layout in local state for reboot persistence
+4. **Persistent configuration**: Stores layout in local state on OS disk
 
 #### Meta-Storage Layout
 
 **Data Nodes:**
-- `/dev/qb_meta_wal` (20GB) : RAW device, direct block-I/O for WAL (sequential writes)
-- `/dev/qb_meta_map` (40GB) : ext4 filesystem for mapping/B+Tree (complex structures)
+- `/dev/qb_meta_wal` (20GB) : RAW device on **storage SSD**, direct block-I/O for WAL
+- `/dev/qb_meta_map` (40GB) : ext4 filesystem on **storage SSD** for mapping/B+Tree
 
 **Arbiter Nodes:**
-- `/dev/qb_meta_wal` (1GB) : RAW device, cluster metadata only
+- `/dev/qb_meta_wal` (1GB) : RAW device on **storage SSD**, cluster metadata only
 - No mapping storage (arbiters store no user data)
 
 ### LVM Integration Strategy
@@ -69,7 +76,7 @@ The engine automatically finds and uses available NBD devices:
 - **VG**: `qbd_vg_<volumename>`
 - **LV Types**: Thin Pool LV only
 - **Contents**: Thin-Pool-LV (exclusively for Proxmox VM data)
-- **No metadata storage**: All metadata handled by local meta-storage
+- **No metadata storage**: All metadata handled by local meta-storage on storage SSD
 - **Admin access**: Thin Pools available for immediate VM deployment
 
 ### Administration Interface
@@ -81,13 +88,14 @@ The engine automatically finds and uses available NBD devices:
 ### System Integration
 - Single **systemd service**: `quorumbd-engine.service`
 - Engine handles own LVM activation during startup (`vgchange -ay` for all volume groups)
-- **Local state management**: Critical state stored on OS disk (requires admin backups)
+- **Local state management**: Critical state stored on **OS disk** (requires admin backups)
+- **Meta-storage**: WAL and mapping on **storage SSD** for performance
 - **No external dependencies**: Pure Go implementation prioritized
 - **Automatic recovery**: Engine restores meta-storage devices on startup
 
 ### Proxmox Workflow
 1. Admin creates QuorumBD data-volume "vm-data" via REST API
-2. Engine provisions complete LVM stack on NBD device
+2. Engine provisions complete LVM stack on NBD device (using storage SSD)
 3. Engine runs `vgchange -ay` for all volume groups
 4. **Proxmox auto-discovers** Thin Pool via LVM scan
 5. Admin adds Thin Pool as LVM-Thin storage in Proxmox GUI

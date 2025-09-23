@@ -20,20 +20,23 @@
 - Consensus mechanism must work with asymmetric node topologies and storage roles
 
 ### Metadata Architecture
-- **Local meta-storage** on each node's OS disk (not replicated)
+- **Local meta-storage** on each node's **storage disk (SSD)** - **NOT OS disk**
+- **OS disk**: Only contains engine state and configuration (requires admin backup)
+- **Storage disk**: Contains WAL, mapping data, and user data blocks
 - **Device-mapper based** allocation with node-type specific sizing
 - **Separation of concerns**: 
   - RAW WAL device for maximum performance (sequential writes)
   - ext4 filesystem for complex mapping structures (data nodes only)
-- **Metadata placement**: Stored at the beginning of the storage device for optimal performance
+- **Metadata placement**: Stored at the beginning of the **storage SSD** for optimal performance
 - **No recursion**: Meta-storage managed separately from data volume I/O path
-- **State persistence**: Critical configuration stored locally (admin backup required)
+- **State persistence**: Critical configuration stored on OS disk (admin backup required)
 
 ### Configuration Philosophy
 - **Clear separation** between static configuration (`/etc/quorumbd/`) and dynamic state (`/var/lib/quorumbd/`)
 - Static configuration defines **what** (volumes, cluster layout, meta-storage sizing)
 - Dynamic state tracks **how** (runtime mappings, device assignments, final sizes)
-- **Local state criticality**: Engine state requires regular backups by admin
+- **Local state criticality**: Engine state on OS disk requires regular backups by admin
+- **Meta-storage location**: WAL and mapping on storage SSD for performance
 - Engine maintains full control over its internal storage layout
 - Admin works with ready-to-use Thin Pools provided by the engine
 
