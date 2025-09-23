@@ -26,19 +26,30 @@ The engine automatically finds and uses available NBD devices:
 
 ### Local Meta-Storage Management
 
+#### Pure Go Implementation
+- **No external dependencies**: Engine handles everything in Go
+- **Device-mapper integration**: Direct syscalls or Go library for device management
+- **Filesystem operations**: ext4 creation and management via Go libraries
+
 #### Device-Mapper Configuration
-- **Engine-managed**: Creates/removes device-mapper devices on startup/shutdown
+- **Engine-managed**: Creates/removes device-mapper devices programmatically
 - **Node-type specific sizing** (from configuration):
   - Data Nodes: 20GB WAL + 40GB Mapping
   - Arbiter Nodes: 1GB WAL (no mapping)
 - **Persistent sizing**: Final sizes stored in local state
 - **Optimal placement**: Meta-storage allocated at beginning of storage device
 
+#### Automated Setup Process
+1. **Partitioning**: Engine allocates raw storage areas programmatically
+2. **Device-mapper setup**: Creates /dev/qb_meta_wal and /dev/qb_meta_map devices
+3. **Filesystem creation**: Formats mapping area with ext4 (data nodes only)
+4. **Persistent configuration**: Stores layout in local state
+
 #### Meta-Storage Layout
 
 **Data Nodes:**
 - /dev/qb_meta_wal (20GB) : RAW device, direct block-I/O for WAL
-- /dev/qb_meta_map (40GB) : ext4 filesystem for mapping/B+Tree
+- /dev/qb_meta_map (40GB) : ext4 filesystem for mapping/B+Tree (auto-created)
 
 **Arbiter Nodes:**
 - /dev/qb_meta_wal (1GB) : RAW device, cluster metadata only
@@ -65,11 +76,4 @@ The engine automatically finds and uses available NBD devices:
 - Single **systemd service**: `quorumbd-engine.service`
 - Engine handles own LVM activation during startup
 - **Local state management**: Critical state stored on OS disk (requires admin backups)
-- No external dependencies or activation sequences required
-
-### Proxmox Workflow
-1. Admin creates QuorumBD data-volume "vm-data" via REST API
-2. Engine provisions complete LVM stack on NBD device
-3. Engine runs `vgchange -ay` for all volume groups
-4. **Proxmox auto-discovers** Thin Pool via LVM scan
-5. Admin adds Thin Pool as LVM-Thin storage in Proxmox GUI
+- **No external dependencies**: Pure Go implementation for all operations
