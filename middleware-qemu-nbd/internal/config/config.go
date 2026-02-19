@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -30,16 +32,18 @@ type Config struct {
 	Common struct {
 		StateDir string `toml:"state_dir"`
 	} `toml:"common"`
-	Logging struct {
-		Type     LoggingType `toml:"type"`
-		FileName string      `toml:"filename"`
-	} `toml:"logging"`
+	NBDServer struct {
+		MainSocket string `toml:"main_socket"`
+	} `toml:"nbdserver"`
 	Core struct {
 		Server         string   `toml:"server"`
 		FallbackServer []string `toml:"fallback_server"`
-		DataPort       int      `toml:"data_port"`
-		ControlPort    int      `toml:"control_port"`
 	} `toml:"core"`
+	Logging struct {
+		Type     LoggingType `toml:"type"`
+		FileName string      `toml:"filename"`
+		LogLevel string      `toml:"log_level"`
+	} `toml:"logging"`
 }
 
 func Get() *Config {
@@ -52,7 +56,7 @@ func Get() *Config {
 func Load() error {
 	var initErr error
 
-	once.Do(func() {
+	once.Do(func() { // => Singleton
 		if err := load(); err != nil {
 			initErr = err
 			return
@@ -74,6 +78,8 @@ func load() error {
 		return fmt.Errorf("parsing config %s: %w", configPath, err)
 	}
 
+	setDefaults(&cfg)
+
 	if err := validateConfig(&cfg); err != nil {
 		return fmt.Errorf("invalid config %s: %w", configPath, err)
 	}
@@ -83,34 +89,35 @@ func load() error {
 	return nil
 }
 
-func validateConfig(cfg *Config) error {
-	err := validateConfigLogging(cfg)
-	if err != nil {
-		return err
+func setDefaults(cfg *Config) {
+	// Common
+	if cfg.Common.StateDir == "" {
+		cfg.Common.StateDir = filepath.Join("var", "lib", "state", "quorumbd")
 	}
-	// TODO: Validate common
-	// TODO: Validate core
-	return nil
-}
 
-func validateConfigLogging(cfg *Config) error {
+	// Logging
 	if cfg.Logging.Type == "" {
 		cfg.Logging.Type = LoggingStdout
 	}
-	switch cfg.Logging.Type {
-	case LoggingStdout:
-		if cfg.Logging.FileName != "" {
-			return fmt.Errorf("logging.filename must be empty when logging.type=%s", LoggingStdout)
-		}
-		return nil
-	case LoggingFile:
-		if cfg.Logging.FileName == "" {
-			return fmt.Errorf("logging.filename required when logging.type=%s", LoggingFile)
-		}
-	default:
-		return fmt.Errorf("invalid logging.type: %s", cfg.Logging.Type)
+	if cfg.Logging.LogLevel == "" {
+		cfg.Logging.LogLevel = "INFO"
 	}
-	return nil
+}
+
+func validateConfig(cfg *Config) error {
+	return validation.Errors{
+		"common": validation.ValidateStruct(&cfg.Common, validation.Field(&cfg.Common.StateDir, validation.Required.Error("common.state_dir required"))),
+
+		"nbdserver": validation.ValidateStruct(&cfg.NBDServer, validation.Field(&cfg.NBDServer.MainSocket, validation.Required.Error("nbdserver.main_socket required"))),
+
+		"core": validation.ValidateStruct(&cfg.Core, validation.Field(&cfg.Core.Server, validation.Required.Error("core.server required"))),
+
+		"logging": validation.ValidateStruct(&cfg.Logging,
+			validation.Field(&cfg.Logging.Type, validation.Required.Error("logging.type required"), validation.In(LoggingStdout, LoggingFile).Error("invalid logging.type")),
+			validation.Field(&cfg.Logging.FileName, validation.When(cfg.Logging.Type == LoggingFile, validation.Required.Error("logging.filename required when logging.type=file")),
+				validation.When(cfg.Logging.Type == LoggingStdout, validation.Empty.Error("logging.filename must be empty when logging.type=stdout"))),
+			validation.Field(&cfg.Logging.LogLevel, validation.Required.Error("logging.log_level required"), validation.In(slog.LevelDebug.String(), slog.LevelInfo.String(), slog.LevelWarn.String(), slog.LevelError.String()).Error("invalid logging.log_level"))),
+	}.Filter()
 }
 
 func readConfig(path string, cfg *Config) error {
