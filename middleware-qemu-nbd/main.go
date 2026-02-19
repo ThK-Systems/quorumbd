@@ -24,8 +24,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("qemu-nbd middleware starting ...")
+	slog.Info("qemu-nbd middleware is about to start ...")
 
 	// Read state
-	// ...
+
+	// register at core
+
+	// open data sockets and start go routines
+
+	// open control socket and start go routine
+
+	slog.Info("qemu-nbd is completely started")
+
 }
