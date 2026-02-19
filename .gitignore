@@ -25,3 +25,6 @@ profile.cov
 
 # Editor/IDE
 .vscode/
+
+# Go sum
+go.sum
