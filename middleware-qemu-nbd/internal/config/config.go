@@ -27,10 +27,19 @@ var (
 )
 
 type Config struct {
+	Common struct {
+		StateDir string `toml:"state_dir"`
+	} `toml:"common"`
 	Logging struct {
 		Type     LoggingType `toml:"type"`
 		FileName string      `toml:"filename"`
 	} `toml:"logging"`
+	Core struct {
+		Server         string   `toml:"server"`
+		FallbackServer []string `toml:"fallback_server"`
+		DataPort       int      `toml:"data_port"`
+		ControlPort    int      `toml:"control_port"`
+	} `toml:"core"`
 }
 
 func Get() *Config {
@@ -79,6 +88,8 @@ func validateConfig(cfg *Config) error {
 	if err != nil {
 		return err
 	}
+	// TODO: Validate common
+	// TODO: Validate core
 	return nil
 }
 
