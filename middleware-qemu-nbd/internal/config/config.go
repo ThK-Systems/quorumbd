@@ -33,11 +33,13 @@ type Config struct {
 		StateDir string `toml:"state_dir"`
 	} `toml:"common"`
 	NBDServer struct {
-		MainSocket string `toml:"main_socket"`
+		Socket string `toml:"socket"`
 	} `toml:"nbdserver"`
 	Core struct {
-		Server         string   `toml:"server"`
-		FallbackServer []string `toml:"fallback_server"`
+		Server          string   `toml:"server"`
+		ServerFallback  []string `toml:"server_fallback"`
+		Control         string   `toml:"control"`
+		ControlFallback []string `toml:"control_fallback"`
 	} `toml:"core"`
 	Logging struct {
 		Type     LoggingType `toml:"type"`
@@ -92,7 +94,7 @@ func load() error {
 func setDefaults(cfg *Config) {
 	// Common
 	if cfg.Common.StateDir == "" {
-		cfg.Common.StateDir = filepath.Join("var", "lib", "state", "quorumbd")
+		cfg.Common.StateDir = filepath.Join("var", "lib", "state", "quorumbd", "middleware-qemu-nbd")
 	}
 
 	// Logging
@@ -108,9 +110,14 @@ func validateConfig(cfg *Config) error {
 	return validation.Errors{
 		"common": validation.ValidateStruct(&cfg.Common, validation.Field(&cfg.Common.StateDir, validation.Required.Error("common.state_dir required"))),
 
-		"nbdserver": validation.ValidateStruct(&cfg.NBDServer, validation.Field(&cfg.NBDServer.MainSocket, validation.Required.Error("nbdserver.main_socket required"))),
+		"nbdserver": validation.ValidateStruct(&cfg.NBDServer, validation.Field(&cfg.NBDServer.Socket, validation.Required.Error("nbdserver.main_socket required"))),
 
-		"core": validation.ValidateStruct(&cfg.Core, validation.Field(&cfg.Core.Server, validation.Required.Error("core.server required"))),
+		"core": validation.ValidateStruct(&cfg.Core,
+			validation.Field(&cfg.Core.Server, validation.Required.Error("core.server required")),
+			validation.Field(&cfg.Core.Control, validation.Required.Error("core.control required")),
+			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ServerFallback != nil, validation.Required.Error("core.control_fallback is required when core.server_fallback is set"))),
+			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ControlFallback != nil, validation.Length(len(cfg.Core.ServerFallback), len(cfg.Core.ServerFallback)).Error("core.control_fallback must be of same length as core.server_fallback"))),
+		),
 
 		"logging": validation.ValidateStruct(&cfg.Logging,
 			validation.Field(&cfg.Logging.Type, validation.Required.Error("logging.type required"), validation.In(LoggingStdout, LoggingFile).Error("invalid logging.type")),
