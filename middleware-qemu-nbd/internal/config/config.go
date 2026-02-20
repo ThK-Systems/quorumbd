@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	commonconfig "thk-systems.net/quorumbd/common/config"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pelletier/go-toml/v2"
+	commonconfig "thk-systems.net/quorumbd/common/config"
 )
 
 const configFileName = "middleware-qemu-nbd.toml"
