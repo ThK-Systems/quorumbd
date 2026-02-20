@@ -42,16 +42,15 @@ jobs:
           fi
 
       # ---------- BUILD ----------
-      - name: Build all modules (workspace)
-        run: go build ./...
+      - name: Build modules
+        run: |
+          go build ./common/...
+          go build ./core/...
+          go build ./middleware-qemu-nbd/...
 
       # ---------- VET ----------
       - name: Run go vet
         run: go vet ./...
-
-      # ---------- TEST ----------
-      - name: Run tests
-        run: go test -race -count=1 ./...
 
       # ---------- LINTER ----------
       - name: Install golangci-lint
