@@ -3,13 +3,13 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
 
+	commonconfig "thk-systems.net/quorumbd/common/config"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -69,7 +69,7 @@ func Load() error {
 }
 
 func load() error {
-	configPath, err := resolveConfigPath()
+	configPath, err := commonconfig.ResolveConfigPath(configFileName)
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
 	}
@@ -141,34 +141,4 @@ func readConfig(path string, cfg *Config) error {
 	}
 
 	return nil
-}
-
-func resolveConfigPath() (string, error) {
-	// 1. ENV
-	if env := os.Getenv("QUORUMBD_NBDSERVER_CONFIG"); env != "" {
-		if fileExists(env) {
-			return env, nil
-		}
-	}
-
-	// 2. User config (~/.config/...)
-	if dir, err := os.UserConfigDir(); err == nil {
-		path := filepath.Join(dir, "quorumbd", configFileName)
-		if fileExists(path) {
-			return path, nil
-		}
-	}
-
-	// 3. System config
-	path := filepath.Join("/etc/", "quorumbd", configFileName)
-	if fileExists(path) {
-		return path, nil
-	}
-
-	return "", errors.New("no config file found")
-}
-
-func fileExists(path string) bool {
-	st, err := os.Stat(path)
-	return err == nil && !st.IsDir()
 }
