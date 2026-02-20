@@ -34,6 +34,8 @@ func main() {
 
 	// open control socket and start go routine
 
+	// create nbd server socket and listen
+
 	slog.Info("QuorumBD qemu-nbd is completely started")
 
 }
