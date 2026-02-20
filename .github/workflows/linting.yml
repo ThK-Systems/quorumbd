@@ -35,9 +35,10 @@ jobs:
       # --- TIDY CHECK (für alle Module via workspace) ---
       - name: Verify go.mod tidy (all modules)
         run: |
-          for dir in ./common ./core ./middleware-qemu-nbd; do
-            echo "---- $dir ----"
-            (cd "$dir" && go mod tidy)
+          go work sync
+          for mod in ./common ./core ./middleware-qemu-nbd; do
+            echo "---- $mod ----"
+            (cd "$mod" && go mod tidy)
           done
           git diff --exit-code
 
