@@ -34,8 +34,6 @@ linters-settings:
 
   revive:
     severity: error
-    enable-all-rules: false
-    enable-default-rules: false
     rules:
       - name: var-naming
       - name: error-return
