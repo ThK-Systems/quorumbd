@@ -1,11 +1,17 @@
-name: Lint
+name: CI
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
 
 jobs:
-  build:
-    name: Build & Lint (Go 1.26.x)
+  lint:
+    name: Lint (Go 1.26.x)
     runs-on: ubuntu-latest
+
+    env:
+      GOWORK: ${{ github.workspace }}/go.work
 
     steps:
       - uses: actions/checkout@v4
@@ -16,45 +22,72 @@ jobs:
           go-version: "1.26.x"
           check-latest: true
           cache: true
+          cache-dependency-path: |
+            common/go.sum
+            core/go.sum
+            middleware-qemu-nbd/go.sum
 
-      - name: Verify Go version
+      - name: Verify Go + workspace
         run: |
+          set -euo pipefail
           go version
           go env GOVERSION | grep '^go1\.26\.'
-
-      - name: Verify workspace
-        run: |
-          echo "Workspace: $(go env GOWORK)"
+          test -f "$GOWORK"
+          go env GOWORK
           go work sync
           go list -m all
 
-      # ---------- FORMAT ----------
-      - name: Install goimports
-        run: go install golang.org/x/tools/cmd/goimports@latest
-
-      - name: Verify formatting (goimports)
+      - name: Verify formatting (gofmt)
         run: |
-          UNFORMATTED=$(goimports -l .)
+          set -euo pipefail
+          UNFORMATTED=$(gofmt -l .)
           if [ -n "$UNFORMATTED" ]; then
-            echo "Files not formatted with goimports:"
+            echo "Unformatted files:"
             echo "$UNFORMATTED"
             exit 1
           fi
 
-      # ---------- BUILD ----------
-      - name: Build modules (compile only)
-        run: |
-          go build ./common/...
-          go build ./core/...
-          go build ./middleware-qemu-nbd/...
-
-      # ---------- VET ----------
-      - name: Run go vet
-        run: go vet ./...
-
-      # ---------- LINTER ----------
       - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        run: |
+          set -euo pipefail
+          # v2.x hat Go 1.26 Support (siehe Changelog). :contentReference[oaicite:0]{index=0}
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.10.0
 
-      - name: Run golangci-lint
-        run: golangci-lint run --timeout=5m ./...
+      # -------- common (lib) --------
+      - name: go vet (common)
+        working-directory: common
+        run: |
+          set -euo pipefail
+          go vet ./...
+
+      - name: golangci-lint (common)
+        working-directory: common
+        run: |
+          set -euo pipefail
+          golangci-lint run --config ../.golangci.yml --timeout=5m --modules-download-mode=readonly ./...
+
+      # -------- core (main) --------
+      - name: go vet (core)
+        working-directory: core
+        run: |
+          set -euo pipefail
+          go vet ./...
+
+      - name: golangci-lint (core)
+        working-directory: core
+        run: |
+          set -euo pipefail
+          golangci-lint run --config ../.golangci.yml --timeout=5m --modules-download-mode=readonly ./...
+
+      # -------- middleware-qemu-nbd (main) --------
+      - name: go vet (middleware-qemu-nbd)
+        working-directory: middleware-qemu-nbd
+        run: |
+          set -euo pipefail
+          go vet ./...
+
+      - name: golangci-lint (middleware-qemu-nbd)
+        working-directory: middleware-qemu-nbd
+        run: |
+          set -euo pipefail
+          golangci-lint run --config ../.golangci.yml --timeout=5m --modules-download-mode=readonly ./...
