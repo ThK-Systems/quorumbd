@@ -55,8 +55,10 @@ jobs:
             cd -
           done
 
-      - name: golangci-lint (all modules)
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.57.2
-          args: --timeout=5m --issues-exit-code=1 ./...
+        - name: Install golangci-lint
+          run: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+              | sh -s -- -b $(go env GOPATH)/bin v1.57.2
+
+        - name: Run golangci-lint
+          run: golangci-lint run --timeout=5m ./...
