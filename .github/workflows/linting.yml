@@ -1,9 +1,6 @@
-name: CI
+name: Lint
 
-on:
-  push:
-    branches: [ "master" ]
-  pull_request:
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
@@ -32,8 +29,17 @@ jobs:
           go list -m all
 
       # ---------- FORMAT ----------
-      - name: Verify formatting
-        run: test -z "$(gofmt -l .)"
+      - name: Install goimports
+        run: go install golang.org/x/tools/cmd/goimports@latest
+
+      - name: Verify formatting (goimports)
+        run: |
+          UNFORMATTED=$(goimports -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "Files not formatted with goimports:"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
 
       # ---------- BUILD ----------
       - name: Build all modules (workspace)
@@ -49,7 +55,7 @@ jobs:
 
       # ---------- LINTER ----------
       - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
       - name: Run golangci-lint
         run: golangci-lint run --timeout=5m ./...
