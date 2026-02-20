@@ -1,0 +1,51 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - gosimple
+    - typecheck
+    - revive
+    - gocritic
+    - goimports
+    - misspell
+    - unconvert
+    - prealloc
+    - bodyclose
+    - nilerr
+    - errorlint
+
+  disable:
+    - gocyclo # später evtl. aktivieren
+    - funlen  # sonst zu noisy
+
+linters-settings:
+
+  revive:
+    severity: error
+    rules:
+      - name: exported
+      - name: var-naming
+      - name: error-return
+      - name: error-strings
+      - name: if-return
+      - name: indent-error-flow
+      - name: receiver-naming
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  goimports:
+    local-prefixes: github.com/<dein-user>/quorumbd
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-use-default: false

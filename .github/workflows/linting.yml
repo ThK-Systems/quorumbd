@@ -1,0 +1,48 @@
+name: Linting
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint (Go 1.26)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go 1.26
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.0"
+          check-latest: true
+          cache: true
+
+      - name: Verify Go version
+        run: |
+          go version
+          test "$(go env GOVERSION)" = "go1.26.0"
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Ensure go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code
+
+      - name: Check formatting
+        run: |
+          test -z "$(gofmt -l .)"
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.57.2
+          args: --timeout=5m --issues-exit-code=1
