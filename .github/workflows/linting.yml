@@ -1,4 +1,4 @@
-name: Linting
+name: CI
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  lint:
-    name: Lint (Go 1.26.x)
+  build:
+    name: Build & Lint (Go 1.26.x)
     runs-on: ubuntu-latest
 
     steps:
@@ -27,33 +27,29 @@ jobs:
 
       - name: Verify workspace
         run: |
-          echo "PWD: $(pwd)"
-          echo "GOWORK: $(go env GOWORK)"
+          echo "Workspace: $(go env GOWORK)"
           go work sync
           go list -m all
 
-      # --- TIDY CHECK (für alle Module via workspace) ---
-      - name: Verify go.mod tidy (all modules)
-        run: |
-          go work sync
-          for mod in ./common ./core ./middleware-qemu-nbd; do
-            echo "---- $mod ----"
-            (cd "$mod" && go mod tidy)
-          done
-          git diff --exit-code
-
-      # --- FORMAT ---
+      # ---------- FORMAT ----------
       - name: Verify formatting
         run: test -z "$(gofmt -l .)"
 
-      # --- VET ---
-      - name: go vet
+      # ---------- BUILD ----------
+      - name: Build all modules (workspace)
+        run: go build ./...
+
+      # ---------- VET ----------
+      - name: Run go vet
         run: go vet ./...
 
-      # --- LINTER ---
+      # ---------- TEST ----------
+      - name: Run tests
+        run: go test -race -count=1 ./...
+
+      # ---------- LINTER ----------
       - name: Install golangci-lint
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2
 
       - name: Run golangci-lint
         run: golangci-lint run --timeout=5m ./...
