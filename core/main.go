@@ -1,3 +1,4 @@
+// Main package of core
 package main
 
 import "fmt"
