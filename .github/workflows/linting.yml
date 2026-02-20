@@ -7,42 +7,49 @@ on:
 
 jobs:
   lint:
-    name: Lint (Go 1.26)
+    name: Lint (Go 1.26.x)
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Go 1.26
+      - name: Setup Go 1.26.x
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26.0"
+          go-version: "1.26.x"
           check-latest: true
           cache: true
 
       - name: Verify Go version
         run: |
           go version
-          test "$(go env GOVERSION)" = "go1.26.0"
+          go env GOVERSION | grep '^go1\.26\.'
 
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Ensure go.mod is tidy
+      - name: Find modules
+        id: modules
         run: |
-          go mod tidy
-          git diff --exit-code
+          echo "modules=$(find . -name go.mod -not -path '*/vendor/*' -exec dirname {} \; | sort | tr '\n' ' ')" >> $GITHUB_OUTPUT
 
-      - name: Check formatting
+      - name: Run checks per module
         run: |
-          test -z "$(gofmt -l .)"
+          for dir in ${{ steps.modules.outputs.modules }}; do
+            echo "---- MODULE: $dir ----"
+            cd "$dir"
 
-      - name: Run go vet
-        run: go vet ./...
+            go mod download
 
-      - name: Run golangci-lint
+            go mod tidy
+            git diff --exit-code
+
+            test -z "$(gofmt -l .)"
+
+            go vet ./...
+
+            cd -
+          done
+
+      - name: golangci-lint (all modules)
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.57.2
-          args: --timeout=5m --issues-exit-code=1
+          args: --timeout=5m --issues-exit-code=1 ./...
