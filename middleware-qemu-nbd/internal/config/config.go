@@ -16,8 +16,8 @@ import (
 const configFileName = "middleware-qemu-nbd.toml"
 
 var (
-	config *Config
-	once   sync.Once
+	config  *Config
+	once    sync.Once
 	loadErr error
 )
 
