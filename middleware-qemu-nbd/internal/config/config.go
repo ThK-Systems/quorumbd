@@ -89,13 +89,14 @@ func validateConfig(cfg *Config) error {
 	localErrors := validation.Errors{
 		"common": validation.ValidateStruct(&cfg.Common, validation.Field(&cfg.Common.StateDir, validation.Required.Error("common.state_dir required"))),
 
-		"nbdserver": validation.ValidateStruct(&cfg.NBDServer, validation.Field(&cfg.NBDServer.Socket, validation.Required.Error("nbdserver.main_socket required"))),
+		"nbdserver": validation.ValidateStruct(&cfg.NBDServer, validation.Field(&cfg.NBDServer.Socket, validation.Required.Error("nbdserver.socket required"))),
 
 		"core": validation.ValidateStruct(&cfg.Core,
 			validation.Field(&cfg.Core.Server, validation.Required.Error("core.server required")),
 			validation.Field(&cfg.Core.Control, validation.Required.Error("core.control required")),
+			validation.Field(&cfg.Core.ServerFallback, validation.When(cfg.Core.ControlFallback != nil, validation.Required.Error("core.server_fallback is required when core.control_fallback is set"))),
 			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ServerFallback != nil, validation.Required.Error("core.control_fallback is required when core.server_fallback is set"))),
-			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ControlFallback != nil, validation.Length(len(cfg.Core.ServerFallback), len(cfg.Core.ServerFallback)).Error("core.control_fallback must be of same length as core.server_fallback"))),
+			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ServerFallback != nil, validation.Length(len(cfg.Core.ServerFallback), len(cfg.Core.ServerFallback)).Error("core.control_fallback must be of same length as core.server_fallback"))),
 		),
 	}.Filter()
 	return commonconfig.MergeValidationErrors(commonErrors, localErrors)
