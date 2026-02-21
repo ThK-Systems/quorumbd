@@ -3,7 +3,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 
 	"thk-systems.net/quorumbd/common/logging"
@@ -25,7 +24,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("QuorumBD qemu-nbd middleware is about to start ...")
+	logger := logging.For("main")
+
+	logger.Info("QuorumBD qemu-nbd middleware is about to start ...")
 
 	// Read state
 
@@ -37,6 +38,6 @@ func main() {
 
 	// create nbd server socket and listen
 
-	slog.Info("QuorumBD qemu-nbd is completely started")
+	logger.Info("QuorumBD qemu-nbd is completely started")
 
 }
