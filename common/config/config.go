@@ -11,36 +11,49 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-type LoggingType string
+type (
+	LoggingType   string
+	LoggingFormat string
+)
 
 const (
-	LoggingStdout LoggingType = "stdout"
-	LoggingFile   LoggingType = "file"
+	LoggingTypeStdout LoggingType = "stdout"
+	LoggingTypeFile   LoggingType = "file"
+)
+
+const (
+	LoggingFormatText LoggingFormat = "text"
+	LoggingFormatJSON LoggingFormat = "json"
 )
 
 type LoggingConfig struct {
-	Type     LoggingType `toml:"type"`
-	FileName string      `toml:"filename"`
-	LogLevel string      `toml:"log_level"`
+	Type     LoggingType   `toml:"type"`
+	FileName string        `toml:"filename"`
+	Level    string        `toml:"level"`
+	Format   LoggingFormat `toml:"format"`
 }
 
 func SetLoggingDefaults(cfg *LoggingConfig) {
 	// Logging
 	if cfg.Type == "" {
-		cfg.Type = LoggingStdout
+		cfg.Type = LoggingTypeStdout
 	}
-	if cfg.LogLevel == "" {
-		cfg.LogLevel = "INFO"
+	if cfg.Level == "" {
+		cfg.Level = "INFO"
+	}
+	if cfg.Format == "" {
+		cfg.Format = "text"
 	}
 }
 
 func ValidateLoggingConfig(cfg LoggingConfig) error {
 	return validation.Errors{
 		"logging": validation.ValidateStruct(&cfg,
-			validation.Field(&cfg.Type, validation.Required.Error("logging.type required"), validation.In(LoggingStdout, LoggingFile).Error("invalid logging.type")),
-			validation.Field(&cfg.FileName, validation.When(cfg.Type == LoggingFile, validation.Required.Error("logging.filename required when logging.type=file")),
-				validation.When(cfg.Type == LoggingStdout, validation.Empty.Error("logging.filename must be empty when logging.type=stdout"))),
-			validation.Field(&cfg.LogLevel, validation.Required.Error("logging.log_level required"), validation.In(slog.LevelDebug.String(), slog.LevelInfo.String(), slog.LevelWarn.String(), slog.LevelError.String()).Error("invalid logging.log_level"))),
+			validation.Field(&cfg.Type, validation.Required.Error("logging.type required"), validation.In(LoggingTypeStdout, LoggingTypeFile).Error("invalid logging.type")),
+			validation.Field(&cfg.Format, validation.Required.Error("logging.format required"), validation.In(LoggingFormatJSON, LoggingFormatText).Error("invalid logging.format")),
+			validation.Field(&cfg.FileName, validation.When(cfg.Type == LoggingTypeFile, validation.Required.Error("logging.filename required when logging.type=file")),
+				validation.When(cfg.Type == LoggingTypeStdout, validation.Empty.Error("logging.filename must be empty when logging.type=stdout"))),
+			validation.Field(&cfg.Level, validation.Required.Error("logging.level required"), validation.In(slog.LevelDebug.String(), slog.LevelInfo.String(), slog.LevelWarn.String(), slog.LevelError.String()).Error("invalid logging.log_level"))),
 	}.Filter()
 }
 

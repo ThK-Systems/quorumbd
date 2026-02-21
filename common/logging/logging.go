@@ -15,28 +15,29 @@ func Init(cfg config.LoggingConfig) error {
 	var err error
 
 	switch cfg.Type {
-	case config.LoggingStdout:
+	case config.LoggingTypeStdout:
 		writer = os.Stdout
 
-	case config.LoggingFile:
+	case config.LoggingTypeFile:
 		writer, err = os.OpenFile(cfg.FileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("cannot open logging file: %w", err)
 		}
-
-	default:
-		return fmt.Errorf("unknown logging type: %s", cfg.Type)
 	}
 
 	// Set default log level
 	var level slog.Level
-	if err := level.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
-		return fmt.Errorf("invalid log level %q: %w", cfg.LogLevel, err)
+	if err := level.UnmarshalText([]byte(cfg.Level)); err != nil {
+		return fmt.Errorf("invalid log level %q: %w", cfg.Level, err)
 	}
 
-	handler := slog.NewTextHandler(writer, &slog.HandlerOptions{
-		Level: &level,
-	})
+	var handler slog.Handler
+	switch cfg.Format {
+	case config.LoggingFormatJSON:
+		handler = slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: level})
+	case config.LoggingFormatText:
+		handler = slog.NewTextHandler(writer, &slog.HandlerOptions{Level: level})
+	}
 	slog.SetDefault(slog.New(handler))
 
 	return nil
