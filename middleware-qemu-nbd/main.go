@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"os"
 
-	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
 	"thk-systems.net/quorumbd/common/logging"
+	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
 )
 
 func main() {
