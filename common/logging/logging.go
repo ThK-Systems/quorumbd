@@ -6,11 +6,25 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"sync"
 
 	"thk-systems.net/quorumbd/common/config"
 )
 
-func Init(cfg config.LoggingConfig) error {
+var once sync.Once
+
+func Initialize(cfg config.LoggingConfig) error {
+	var initErr error
+	once.Do(func() { // => Singleton
+		if err := initialize(cfg); err != nil {
+			initErr = err
+			return
+		}
+	})
+	return initErr
+}
+
+func initialize(cfg config.LoggingConfig) error {
 	var writer io.Writer
 	var err error
 
