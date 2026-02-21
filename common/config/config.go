@@ -2,6 +2,7 @@
 package config
 
 import (
+	"maps"
 	"errors"
 	"log/slog"
 	"os"
@@ -23,7 +24,7 @@ type LoggingConfig struct {
 	LogLevel string      `toml:"log_level"`
 }
 
-func SetDefaults(cfg *LoggingConfig) {
+func SetLoggingDefaults(cfg *LoggingConfig) {
 	// Logging
 	if cfg.Type == "" {
 		cfg.Type = LoggingStdout
@@ -33,7 +34,7 @@ func SetDefaults(cfg *LoggingConfig) {
 	}
 }
 
-func ValidateConfig(cfg LoggingConfig) error {
+func ValidateLoggingConfig(cfg LoggingConfig) error {
 	return validation.Errors{
 		"logging": validation.ValidateStruct(&cfg,
 			validation.Field(&cfg.Type, validation.Required.Error("logging.type required"), validation.In(LoggingStdout, LoggingFile).Error("invalid logging.type")),
@@ -84,22 +85,16 @@ func fileExists(path string) bool {
 
 func MergeValidationErrors(errs ...error) error {
 	merged := validation.Errors{}
-
 	for _, err := range errs {
 		if err == nil {
 			continue
 		}
-
-		var ve validation.Errors
-		if errors.As(err, &ve) {
-			for k, v := range ve {
-				merged[k] = v
-			}
+		if ve, ok := errors.AsType[validation.Errors](err); ok {
+			maps.Copy(merged, ve)
 		} else {
 			return err
 		}
 	}
-
 	if len(merged) == 0 {
 		return nil
 	}

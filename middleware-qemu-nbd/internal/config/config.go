@@ -83,11 +83,11 @@ func setDefaults(cfg *Config) {
 	if cfg.Common.StateDir == "" {
 		cfg.Common.StateDir = filepath.Join("var", "lib", "state", "quorumbd", "middleware-qemu-nbd")
 	}
-	commonconfig.SetDefaults(&cfg.Logging)
+	commonconfig.SetLoggingDefaults(&cfg.Logging)
 }
 
 func validateConfig(cfg *Config) error {
-	commonErrors := commonconfig.ValidateConfig(cfg.Logging)
+	commonErrors := commonconfig.ValidateLoggingConfig(cfg.Logging)
 	localErrors := validation.Errors{
 		"common": validation.ValidateStruct(&cfg.Common, validation.Field(&cfg.Common.StateDir, validation.Required.Error("common.state_dir required"))),
 
