@@ -2,9 +2,9 @@
 package config
 
 import (
-	"maps"
 	"errors"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
 
