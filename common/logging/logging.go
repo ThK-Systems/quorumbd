@@ -3,15 +3,15 @@ package logging
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
-	"time"
 
 	"thk-systems.net/quorumbd/common/config"
 )
 
 func Init(cfg config.LoggingConfig) error {
-	var writer *os.File
+	var writer io.Writer
 	var err error
 
 	switch cfg.Type {
@@ -19,11 +19,7 @@ func Init(cfg config.LoggingConfig) error {
 		writer = os.Stdout
 
 	case config.LoggingFile:
-		writer, err = os.OpenFile(
-			cfg.FileName,
-			os.O_CREATE|os.O_APPEND|os.O_WRONLY,
-			0644,
-		)
+		writer, err = os.OpenFile(cfg.FileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("cannot open logging file: %w", err)
 		}
@@ -32,16 +28,20 @@ func Init(cfg config.LoggingConfig) error {
 		return fmt.Errorf("unknown logging type: %s", cfg.Type)
 	}
 
-	handler := slog.NewTextHandler(writer, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
-				return slog.String(slog.TimeKey, a.Value.Time().Format(time.RFC3339))
-			}
-			return a
-		},
-	})
+	// Set default log level
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
+		return fmt.Errorf("invalid log level %q: %w", cfg.LogLevel, err)
+	}
 
+	handler := slog.NewTextHandler(writer, &slog.HandlerOptions{
+		Level: &level,
+	})
 	slog.SetDefault(slog.New(handler))
+
 	return nil
+}
+
+func For(pkg string) *slog.Logger {
+	return slog.Default().With(slog.String("pkg", pkg))
 }
