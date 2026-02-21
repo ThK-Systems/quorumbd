@@ -45,14 +45,12 @@ func Get() *Config {
 
 func Load() error {
 	var initErr error
-
 	once.Do(func() { // => Singleton
 		if err := load(); err != nil {
 			initErr = err
 			return
 		}
 	})
-
 	return initErr
 }
 
