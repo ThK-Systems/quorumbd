@@ -11,15 +11,14 @@ import (
 	"thk-systems.net/quorumbd/common/config"
 )
 
-var once sync.Once
+var (
+	once    sync.Once
+	initErr error
+)
 
 func Initialize(cfg config.LoggingConfig) error {
-	var initErr error
 	once.Do(func() { // => Singleton
-		if err := initialize(cfg); err != nil {
-			initErr = err
-			return
-		}
+		initErr = initialize(cfg)
 	})
 	return initErr
 }
