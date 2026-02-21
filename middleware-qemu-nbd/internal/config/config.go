@@ -18,6 +18,7 @@ const configFileName = "middleware-qemu-nbd.toml"
 var (
 	config *Config
 	once   sync.Once
+	loadErr error
 )
 
 type Config struct {
@@ -38,24 +39,20 @@ type Config struct {
 
 func Get() *Config {
 	if config == nil {
-		panic("config.Get() called before Load()")
+		panic("config.Get() called before Load()") // This can never happen
 	}
 	return config
 }
 
 func Load() error {
-	var initErr error
 	once.Do(func() { // => Singleton
-		if err := load(); err != nil {
-			initErr = err
-			return
-		}
+		loadErr = load()
 	})
-	return initErr
+	return loadErr
 }
 
 func load() error {
-	configPath, err := commonconfig.ResolveConfigPath(configFileName)
+	configPath, err := commonconfig.ResolveConfigPath(configFileName, "QUORUMBD_NBDSERVER_CONFIG")
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
 	}
@@ -79,7 +76,7 @@ func load() error {
 
 func setDefaults(cfg *Config) {
 	if cfg.Common.StateDir == "" {
-		cfg.Common.StateDir = filepath.Join("var", "lib", "state", "quorumbd", "middleware-qemu-nbd")
+		cfg.Common.StateDir = filepath.Join("/", "var", "lib", "state", "quorumbd", "middleware-qemu-nbd")
 	}
 	commonconfig.SetLoggingDefaults(&cfg.Logging)
 }

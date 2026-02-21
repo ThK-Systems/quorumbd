@@ -57,11 +57,13 @@ func ValidateLoggingConfig(cfg LoggingConfig) error {
 	}.Filter()
 }
 
-func ResolveConfigPath(cfgFileName string) (string, error) {
+func ResolveConfigPath(cfgFileName string, envVarName string) (string, error) {
 	// 1. ENV
-	if env := os.Getenv("QUORUMBD_NBDSERVER_CONFIG"); env != "" {
-		if fileExists(env) {
-			return env, nil
+	if envVarName != "" {
+		if env := os.Getenv(envVarName); env != "" {
+			if fileExists(env) {
+				return env, nil
+			}
 		}
 	}
 
