@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
-	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/logging"
+	"thk-systems.net/quorumbd/common/logging"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 	}
 
 	// Init logging
-	err = logging.Init()
+	err = logging.Init(config.Get().Logging)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

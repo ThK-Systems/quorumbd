@@ -7,21 +7,20 @@ import (
 	"os"
 	"time"
 
-	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
+	"thk-systems.net/quorumbd/common/config"
 )
 
-func Init() error {
+func Init(cfg config.LoggingConfig) error {
 	var writer *os.File
 	var err error
-	cfg := config.Get()
 
-	switch cfg.Logging.Type {
+	switch cfg.Type {
 	case config.LoggingStdout:
 		writer = os.Stdout
 
 	case config.LoggingFile:
 		writer, err = os.OpenFile(
-			cfg.Logging.FileName,
+			cfg.FileName,
 			os.O_CREATE|os.O_APPEND|os.O_WRONLY,
 			0644,
 		)
@@ -30,7 +29,7 @@ func Init() error {
 		}
 
 	default:
-		return fmt.Errorf("unknown logging type: %s", cfg.Logging.Type)
+		return fmt.Errorf("unknown logging type: %s", cfg.Type)
 	}
 
 	handler := slog.NewTextHandler(writer, &slog.HandlerOptions{

@@ -4,7 +4,6 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,13 +14,6 @@ import (
 )
 
 const configFileName = "middleware-qemu-nbd.toml"
-
-type LoggingType string
-
-const (
-	LoggingStdout LoggingType = "stdout"
-	LoggingFile   LoggingType = "file"
-)
 
 var (
 	config *Config
@@ -41,11 +33,7 @@ type Config struct {
 		Control         string   `toml:"control"`
 		ControlFallback []string `toml:"control_fallback"`
 	} `toml:"core"`
-	Logging struct {
-		Type     LoggingType `toml:"type"`
-		FileName string      `toml:"filename"`
-		LogLevel string      `toml:"log_level"`
-	} `toml:"logging"`
+	Logging commonconfig.LoggingConfig `toml:"logging"`
 }
 
 func Get() *Config {
@@ -92,22 +80,15 @@ func load() error {
 }
 
 func setDefaults(cfg *Config) {
-	// Common
 	if cfg.Common.StateDir == "" {
 		cfg.Common.StateDir = filepath.Join("var", "lib", "state", "quorumbd", "middleware-qemu-nbd")
 	}
-
-	// Logging
-	if cfg.Logging.Type == "" {
-		cfg.Logging.Type = LoggingStdout
-	}
-	if cfg.Logging.LogLevel == "" {
-		cfg.Logging.LogLevel = "INFO"
-	}
+	commonconfig.SetDefaults(&cfg.Logging)
 }
 
 func validateConfig(cfg *Config) error {
-	return validation.Errors{
+	commonErrors := commonconfig.ValidateConfig(cfg.Logging)
+	localErrors := validation.Errors{
 		"common": validation.ValidateStruct(&cfg.Common, validation.Field(&cfg.Common.StateDir, validation.Required.Error("common.state_dir required"))),
 
 		"nbdserver": validation.ValidateStruct(&cfg.NBDServer, validation.Field(&cfg.NBDServer.Socket, validation.Required.Error("nbdserver.main_socket required"))),
@@ -118,13 +99,8 @@ func validateConfig(cfg *Config) error {
 			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ServerFallback != nil, validation.Required.Error("core.control_fallback is required when core.server_fallback is set"))),
 			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ControlFallback != nil, validation.Length(len(cfg.Core.ServerFallback), len(cfg.Core.ServerFallback)).Error("core.control_fallback must be of same length as core.server_fallback"))),
 		),
-
-		"logging": validation.ValidateStruct(&cfg.Logging,
-			validation.Field(&cfg.Logging.Type, validation.Required.Error("logging.type required"), validation.In(LoggingStdout, LoggingFile).Error("invalid logging.type")),
-			validation.Field(&cfg.Logging.FileName, validation.When(cfg.Logging.Type == LoggingFile, validation.Required.Error("logging.filename required when logging.type=file")),
-				validation.When(cfg.Logging.Type == LoggingStdout, validation.Empty.Error("logging.filename must be empty when logging.type=stdout"))),
-			validation.Field(&cfg.Logging.LogLevel, validation.Required.Error("logging.log_level required"), validation.In(slog.LevelDebug.String(), slog.LevelInfo.String(), slog.LevelWarn.String(), slog.LevelError.String()).Error("invalid logging.log_level"))),
 	}.Filter()
+	return commonconfig.MergeValidationErrors(commonErrors, localErrors)
 }
 
 func readConfig(path string, cfg *Config) error {
