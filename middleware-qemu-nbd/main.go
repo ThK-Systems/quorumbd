@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"thk-systems.net/quorumbd/common/logging"
-	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
+	logging "thk-systems.net/quorumbd/common/logging"
+	app "thk-systems.net/quorumbd/middleware-common/app"
+	config "thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
 )
 
 func main() {
@@ -29,21 +30,5 @@ func run() error {
 		return err
 	}
 
-	logger := logging.For("main")
-	logger.Info("quorumbd qemu-nbd-server is about to start ...")
-
-	// read state
-
-	// register at core
-
-	// create nbd server socket and listen
-	// TODO: NEXT
-
-	// open data sockets and start go routines (tcp/udp)
-
-	// open control socket and start go routine (tcp/udp)
-
-	logger.Info("quorumbd qemu-nbd-server is completely started")
-
-	return nil
+	return app.New("qemu-nbd").Run()
 }
