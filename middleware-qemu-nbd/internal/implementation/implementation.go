@@ -1,29 +1,29 @@
 // Package implementation implements the adaptor interface of the middleware-common
 package implementation
 
-type implementation struct {
+type Implementation struct {
 }
 
-func New() *implementation {
-	return &implementation{}
+func New() *Implementation {
+	return &Implementation{}
 }
 
 // GetImplementationName is an interface method
-func (impl *implementation) GetImplementationName() string {
+func (impl *Implementation) GetImplementationName() string {
 	return "qemu-nbd"
 }
 
 // Listen is an interface method
-func (impl *implementation) Listen() error {
+func (impl *Implementation) Listen() error {
 	return nil
 }
 
 // Connect is an interface method
-func (impl *implementation) Connect() error {
+func (impl *Implementation) Connect() error {
 	return nil
 }
 
 // Disconnect is an interface method
-func (impl *implementation) Disconnect() error {
+func (impl *Implementation) Disconnect() error {
 	return nil
 }
