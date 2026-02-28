@@ -39,8 +39,8 @@ type LoggingConfig struct {
 
 func (cfg *LoggingConfig) SetDefaults() {
 	cfg.Type = LoggingTypeStdout
-	cfg.Level = "INFO"
-	cfg.Format = "text"
+	cfg.Level = slog.LevelInfo.String()
+	cfg.Format = LoggingFormatJSON
 }
 
 func (cfg *CommonConfig) SetDefaults() {
