@@ -13,11 +13,11 @@ var (
 
 type App struct {
 	Logger  *slog.Logger
-	Config  config.Config
+	Config  *config.Config
 	Adaptor Adaptor
 }
 
-func New(adaptor Adaptor, config config.Config, logger *slog.Logger) App {
+func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) App {
 	if logger == nil {
 		logger = slog.Default()
 	}

@@ -41,8 +41,8 @@ func Get() *Config {
 	return config
 }
 
-func (cfg *Config) ToMiddlewareConfig() middelwareconfig.Config {
-	return middelwareconfig.Config{
+func (cfg *Config) ToMiddlewareConfig() *middelwareconfig.Config {
+	return &middelwareconfig.Config{
 		Common:         cfg.Common,
 		CoreConnection: cfg.CoreConnection,
 	}
