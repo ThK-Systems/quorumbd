@@ -2,6 +2,7 @@
 package implementation
 
 import (
+	"errors"
 	"log/slog"
 
 	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
@@ -19,22 +20,17 @@ func New(config *config.Config, logger *slog.Logger) *Implementation {
 	}
 }
 
-// GetImplementationName is an interface method
+// GetImplementationName is an interface method of common-middleware.Adapter
 func (impl *Implementation) GetImplementationName() string {
 	return "qemu-nbd"
 }
 
-// Listen is an interface method
+// Listen is an interface method of common-middleware.Adapter
 func (impl *Implementation) Listen() error {
-	return nil
+	return errors.New("not implemented")
 }
 
-// Connect is an interface method
-func (impl *Implementation) Connect() error {
-	return nil
-}
-
-// Disconnect is an interface method
+// Disconnect is an interface method of common-middleware.Adapter
 func (impl *Implementation) Disconnect() error {
-	return nil
+	return errors.New("not implemented")
 }
