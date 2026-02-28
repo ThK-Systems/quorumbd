@@ -18,7 +18,7 @@ import (
 const configFileName = "middleware-qemu-nbd.toml"
 
 var (
-	currentConfig *config
+	config *Config
 	once          sync.Once
 	loadErr       error
 )
@@ -27,18 +27,18 @@ type nbdServer struct {
 	Socket string `toml:"socket"`
 }
 
-type config struct {
+type Config struct {
 	Common         commonconfig.CommonConfig       `toml:"common"`
 	CoreConnection middelwareconfig.CoreConnection `toml:"coreconnection"`
 	Logging        commonconfig.LoggingConfig      `toml:"logging"`
 	NBDServer      nbdServer                       `toml:"nbdserver"`
 }
 
-func Get() *config {
-	if currentConfig == nil {
+func Get() *Config {
+	if config == nil {
 		panic("config.Get() called before Load()") // This can never happen
 	}
-	return currentConfig
+	return config
 }
 
 func Load() error {
@@ -54,7 +54,7 @@ func load() error {
 		return fmt.Errorf("loading config: %w", err)
 	}
 
-	var cfg config
+	var cfg Config
 
 	cfg.setDefaults()
 
@@ -66,12 +66,12 @@ func load() error {
 		return fmt.Errorf("invalid config %s: %w", configPath, err)
 	}
 
-	currentConfig = &cfg
+	config = &cfg
 
 	return nil
 }
 
-func (cfg *config) setDefaults() {
+func (cfg *Config) setDefaults() {
 	cfg.Common.SetDefaults()
 	cfg.Logging.SetDefaults()
 	cfg.CoreConnection.SetDefaults()
@@ -82,7 +82,7 @@ func (cfg *nbdServer) setDefaults() {
 	cfg.Socket = filepath.Join("/", "var", "run", "quorumbd", "main.sock")
 }
 
-func (cfg *config) validate() error {
+func (cfg *Config) validate() error {
 	commonErrors := cfg.Common.Validate()
 	loggingErrors := cfg.Logging.Validate()
 	coreConnectionErrors := cfg.CoreConnection.Validate()
@@ -96,7 +96,7 @@ func (cfg *nbdServer) validate() error {
 	}.Filter()
 }
 
-func (cfg *config) readConfig(path string) error {
+func (cfg *Config) readConfig(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
