@@ -22,7 +22,7 @@ func (cfg *CoreConnection) SetDefaults() {
 
 func (cfg *CoreConnection) Validate() error {
 	return validation.Errors{
-		"coreConnection": validation.ValidateStruct(cfg,
+		"coreconnection": validation.ValidateStruct(cfg,
 			validation.Field(&cfg.Server, validation.Required.Error("core.server required")),
 		)}.Filter()
 }
