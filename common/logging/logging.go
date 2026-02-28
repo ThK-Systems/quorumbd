@@ -56,6 +56,18 @@ func initialize(cfg config.LoggingConfig) error {
 	return nil
 }
 
+func GetDefaultLogger() *slog.Logger {
+	return slog.Default()
+}
+
+func With(args ...any) *slog.Logger {
+	return GetDefaultLogger().With(args...)
+}
+
+func WithSingle(key string, value string) *slog.Logger {
+	return With(key, value)
+}
+
 func For(pkg string) *slog.Logger {
-	return slog.Default().With(slog.String("pkg", pkg))
+	return WithSingle("pkg", pkg)
 }
