@@ -2,11 +2,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"thk-systems.net/quorumbd/common/logging"
 	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
@@ -35,13 +32,6 @@ func run() error {
 	logger := logging.For("main")
 	logger.Info("quorumbd qemu-nbd-server is about to start ...")
 
-	// prepare shutdown
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	// channel to receive fatal errors from components
-	errCh := make(chan error, 1)
-
 	// read state
 
 	// register at core
@@ -49,20 +39,11 @@ func run() error {
 	// create nbd server socket and listen
 	// TODO: NEXT
 
-	// open data sockets and start go routines
+	// open data sockets and start go routines (tcp/udp)
 
-	// open control socket and start go routine
+	// open control socket and start go routine (tcp/udp)
 
 	logger.Info("quorumbd qemu-nbd-server is completely started")
 
-	// orchestrator
-	select {
-	case <-ctx.Done():
-		logger.Info("quorumbd qemu-nbd-server stopped because of shutdown signal")
-		return nil
-
-	case err := <-errCh:
-		logger.Error("quorumbd qemu-nbd-server stopped because component failed", "err", err)
-		return err
-	}
+	return nil
 }

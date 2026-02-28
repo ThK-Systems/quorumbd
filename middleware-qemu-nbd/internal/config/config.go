@@ -8,40 +8,37 @@ import (
 	"path/filepath"
 	"sync"
 
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pelletier/go-toml/v2"
 	commonconfig "thk-systems.net/quorumbd/common/config"
+	middelwareconfig "thk-systems.net/quorumbd/middleware-common/config"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 const configFileName = "middleware-qemu-nbd.toml"
 
 var (
-	config  *Config
+	currentConfig  *config
 	once    sync.Once
 	loadErr error
 )
 
-type Config struct {
-	Common struct {
-		StateDir string `toml:"state_dir"`
-	} `toml:"common"`
-	NBDServer struct {
-		Socket string `toml:"socket"`
-	} `toml:"nbdserver"`
-	Core struct {
-		Server          string   `toml:"server"`
-		ServerFallback  []string `toml:"server_fallback"`
-		Control         string   `toml:"control"`
-		ControlFallback []string `toml:"control_fallback"`
-	} `toml:"core"`
-	Logging commonconfig.LoggingConfig `toml:"logging"`
+type nbdServer struct {
+	Socket string `toml:"socket"`
 }
 
-func Get() *Config {
-	if config == nil {
+type config struct {
+	Common         commonconfig.CommonConfig       `toml:"common"`
+	CoreConnection middelwareconfig.CoreConnection `toml:"coreconnection"`
+	Logging        commonconfig.LoggingConfig      `toml:"logging"`
+	NBDServer      nbdServer                       `toml:"nbdserver"`
+}
+
+func Get() *config {
+	if currentConfig == nil {
 		panic("config.Get() called before Load()") // This can never happen
 	}
-	return config
+	return currentConfig
 }
 
 func Load() error {
@@ -57,49 +54,49 @@ func load() error {
 		return fmt.Errorf("loading config: %w", err)
 	}
 
-	var cfg Config
+	var cfg config
 
-	if err := readConfig(configPath, &cfg); err != nil {
+	cfg.setDefaults()
+
+	if err := cfg.readConfig(configPath); err != nil {
 		return fmt.Errorf("parsing config %s: %w", configPath, err)
 	}
 
-	setDefaults(&cfg)
-
-	if err := validateConfig(&cfg); err != nil {
+	if err := cfg.validate(); err != nil {
 		return fmt.Errorf("invalid config %s: %w", configPath, err)
 	}
 
-	config = &cfg
+	currentConfig = &cfg
 
 	return nil
 }
 
-func setDefaults(cfg *Config) {
-	if cfg.Common.StateDir == "" {
-		cfg.Common.StateDir = filepath.Join("/", "var", "lib", "state", "quorumbd", "middleware-qemu-nbd")
-	}
-	commonconfig.SetLoggingDefaults(&cfg.Logging)
+func (cfg *config) setDefaults() {
+	cfg.Common.SetDefaults()
+	cfg.Logging.SetDefaults()
+	cfg.CoreConnection.SetDefaults()
+	cfg.NBDServer.setDefaults()
 }
 
-func validateConfig(cfg *Config) error {
-	commonErrors := commonconfig.ValidateLoggingConfig(cfg.Logging)
-	localErrors := validation.Errors{
-		"common": validation.ValidateStruct(&cfg.Common, validation.Field(&cfg.Common.StateDir, validation.Required.Error("common.state_dir required"))),
+func (cfg *nbdServer) setDefaults() {
+	cfg.Socket = filepath.Join("/", "var", "run", "quorumbd", "main.sock")
+}
 
-		"nbdserver": validation.ValidateStruct(&cfg.NBDServer, validation.Field(&cfg.NBDServer.Socket, validation.Required.Error("nbdserver.socket required"))),
+func (cfg *config) validate() error {
+	commonErrors := cfg.Common.Validate()
+	loggingErrors := cfg.Logging.Validate()
+	coreConnectionErrors := cfg.CoreConnection.Validate()
+	nbdServerErrors := cfg.NBDServer.validate()
+	return commonconfig.MergeValidationErrors(commonErrors, loggingErrors, coreConnectionErrors, nbdServerErrors)
+}
 
-		"core": validation.ValidateStruct(&cfg.Core,
-			validation.Field(&cfg.Core.Server, validation.Required.Error("core.server required")),
-			validation.Field(&cfg.Core.Control, validation.Required.Error("core.control required")),
-			validation.Field(&cfg.Core.ServerFallback, validation.When(cfg.Core.ControlFallback != nil, validation.Required.Error("core.server_fallback is required when core.control_fallback is set"))),
-			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ServerFallback != nil, validation.Required.Error("core.control_fallback is required when core.server_fallback is set"))),
-			validation.Field(&cfg.Core.ControlFallback, validation.When(cfg.Core.ServerFallback != nil, validation.Length(len(cfg.Core.ServerFallback), len(cfg.Core.ServerFallback)).Error("core.control_fallback must be of same length as core.server_fallback"))),
-		),
+func (cfg *nbdServer) validate() error {
+	return validation.Errors{
+		"nbdserver": validation.ValidateStruct(cfg, validation.Field(&cfg.Socket, validation.Required.Error("nbdserver.socket required"))),
 	}.Filter()
-	return commonconfig.MergeValidationErrors(commonErrors, localErrors)
 }
 
-func readConfig(path string, cfg *Config) error {
+func (cfg *config) readConfig(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err

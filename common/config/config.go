@@ -1,4 +1,4 @@
-// Package config provides common configuration loading and validation
+// Package config provides common configuration and validation
 package config
 
 import (
@@ -26,6 +26,10 @@ const (
 	LoggingFormatJSON LoggingFormat = "json"
 )
 
+type CommonConfig struct {
+	StateDir string `toml:"state_dir"`
+}
+
 type LoggingConfig struct {
 	Type     LoggingType   `toml:"type"`
 	FileName string        `toml:"filename"`
@@ -33,27 +37,30 @@ type LoggingConfig struct {
 	Format   LoggingFormat `toml:"format"`
 }
 
-func SetLoggingDefaults(cfg *LoggingConfig) {
-	// Logging
-	if cfg.Type == "" {
-		cfg.Type = LoggingTypeStdout
-	}
-	if cfg.Level == "" {
-		cfg.Level = "INFO"
-	}
-	if cfg.Format == "" {
-		cfg.Format = "text"
-	}
+func (cfg *LoggingConfig) SetDefaults() {
+	cfg.Type = LoggingTypeStdout
+	cfg.Level = "INFO"
+	cfg.Format = "text"
 }
 
-func ValidateLoggingConfig(cfg LoggingConfig) error {
+func (cfg *CommonConfig) SetDefaults() {
+	cfg.StateDir = filepath.Join("/", "var", "lib", "state", "quorumbd")
+}
+
+func (cfg *LoggingConfig) Validate() error {
 	return validation.Errors{
-		"logging": validation.ValidateStruct(&cfg,
+		"logging": validation.ValidateStruct(cfg,
 			validation.Field(&cfg.Type, validation.Required.Error("logging.type required"), validation.In(LoggingTypeStdout, LoggingTypeFile).Error("invalid logging.type")),
 			validation.Field(&cfg.Format, validation.Required.Error("logging.format required"), validation.In(LoggingFormatJSON, LoggingFormatText).Error("invalid logging.format")),
 			validation.Field(&cfg.FileName, validation.When(cfg.Type == LoggingTypeFile, validation.Required.Error("logging.filename required when logging.type=file")),
 				validation.When(cfg.Type == LoggingTypeStdout, validation.Empty.Error("logging.filename must be empty when logging.type=stdout"))),
 			validation.Field(&cfg.Level, validation.Required.Error("logging.level required"), validation.In(slog.LevelDebug.String(), slog.LevelInfo.String(), slog.LevelWarn.String(), slog.LevelError.String()).Error("invalid logging.log_level"))),
+	}.Filter()
+}
+
+func (cfg *CommonConfig) Validate() error {
+	return validation.Errors{
+		"common": validation.ValidateStruct(cfg, validation.Field(&cfg.StateDir, validation.Required.Error("common.state_dir required"))),
 	}.Filter()
 }
 
