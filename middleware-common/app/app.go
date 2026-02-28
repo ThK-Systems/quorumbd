@@ -27,6 +27,6 @@ func New(adaptor Adaptor, config config.Config) App {
 
 func (app App) Run() error {
 	Logger.Info("Middleware is about to start ...")
-	Logger.Info("Middleware is about to exit ...")
+	Logger.Info("Middleware is exiting ...")
 	return nil
 }
