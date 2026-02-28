@@ -1,11 +1,22 @@
 // Package implementation implements the adaptor interface of middleware-common
 package implementation
 
+import (
+	"log/slog"
+
+	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
+)
+
 type Implementation struct {
+	Config *config.Config
+	Logger *slog.Logger
 }
 
-func New() *Implementation {
-	return &Implementation{}
+func New(config *config.Config, logger *slog.Logger) *Implementation {
+	return &Implementation{
+		Config: config,
+		Logger: logger,
+	}
 }
 
 // GetImplementationName is an interface method

@@ -2,31 +2,36 @@
 package app
 
 import (
-	logging "thk-systems.net/quorumbd/common/logging"
+	"log/slog"
+
 	config "thk-systems.net/quorumbd/middleware-common/config"
 )
 
 var (
-	Logger = logging.For("middlewareapp")
 	Config config.Config
 )
 
 type App struct {
+	Logger  *slog.Logger
 	Config  config.Config
 	Adaptor Adaptor
 }
 
-func New(adaptor Adaptor, config config.Config) App {
+func New(adaptor Adaptor, config config.Config, logger *slog.Logger) App {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	newApp := App{
+		Logger:  logger,
 		Config:  config,
 		Adaptor: adaptor,
 	}
-	Logger = Logger.With("impl", newApp.Adaptor.GetImplementationName())
+	newApp.Logger = newApp.Logger.With("impl", newApp.Adaptor.GetImplementationName())
 	return newApp
 }
 
 func (app App) Run() error {
-	Logger.Info("Middleware is about to start ...")
-	Logger.Info("Middleware is exiting ...")
+	app.Logger.Info("Middleware is about to start ...")
+	app.Logger.Info("Middleware is exiting ...")
 	return nil
 }
