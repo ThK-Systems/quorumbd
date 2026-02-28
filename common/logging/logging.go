@@ -14,6 +14,8 @@ import (
 var (
 	once    sync.Once
 	initErr error
+	writer  io.Writer
+	file    *os.File
 )
 
 func Initialize(cfg config.LoggingConfig) error {
@@ -24,18 +26,16 @@ func Initialize(cfg config.LoggingConfig) error {
 }
 
 func initialize(cfg config.LoggingConfig) error {
-	var writer io.Writer
-	var err error
-
 	switch cfg.Type {
 	case config.LoggingTypeStdout:
 		writer = os.Stdout
 
 	case config.LoggingTypeFile:
-		writer, err = os.OpenFile(cfg.FileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(cfg.FileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("cannot open logging file: %w", err)
 		}
+		writer = file
 	}
 
 	// Set default log level
@@ -53,6 +53,13 @@ func initialize(cfg config.LoggingConfig) error {
 	}
 	slog.SetDefault(slog.New(handler))
 
+	return nil
+}
+
+func TerminateLogging(cfg config.LoggingConfig) error {
+	if file != nil {
+		return file.Close()
+	}
 	return nil
 }
 

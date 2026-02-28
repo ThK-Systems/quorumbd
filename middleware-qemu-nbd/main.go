@@ -31,5 +31,11 @@ func run() error {
 		return err
 	}
 
-	return app.New(implementation.New(), config.Get().ToMiddlewareConfig()).Run()
+	err = app.New(implementation.New(), config.Get().ToMiddlewareConfig()).Run()
+	if err != nil {
+		return err
+	}
+
+	// terminate logging
+	return logging.TerminateLogging(config.Get().Logging)
 }
