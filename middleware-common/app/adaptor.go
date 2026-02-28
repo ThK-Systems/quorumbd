@@ -2,7 +2,7 @@ package app
 
 type Adaptor interface {
 	GetImplementationName() string
-	Connect() error
+	Listen() error
 	Disconnect() error
 }
 
