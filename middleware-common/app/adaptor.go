@@ -1,8 +1,13 @@
 package app
 
 type Adaptor interface {
-	GetName() string
+	GetImplementationName() string
 	Connect() error
 	Disconnect() error
-	HandleConnection() error
 }
+
+// TODO: Receive
+// TODO: Reply
+// TODO: Common structs and mapper for receive and reply
+
+// TODO: Maybe HandleConnection

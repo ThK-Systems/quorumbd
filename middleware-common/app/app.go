@@ -11,18 +11,21 @@ var (
 	Config config.Config
 )
 
-type app struct {
-	implementation string
+type App struct {
+	Config  config.Config
+	Adaptor Adaptor
 }
 
-func New(adaptor Adaptor, config config.Config) app {
-	Logger = Logger.With("impl", adaptor.GetName())
-	return app{
-		implementation: adaptor.GetName(),
+func New(adaptor Adaptor, config config.Config) App {
+	newApp := App{
+		Config:  config,
+		Adaptor: adaptor,
 	}
+	Logger = Logger.With("impl", newApp.Adaptor.GetImplementationName())
+	return newApp
 }
 
-func (app app) Run() error {
+func (app App) Run() error {
 	Logger.Info("Middleware is about to start ...")
 	Logger.Info("Middleware is about to exit ...")
 	return nil

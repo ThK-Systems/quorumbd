@@ -8,9 +8,14 @@ func New() *implementation {
 	return &implementation{}
 }
 
-// GetName is an interface method
-func (impl *implementation) GetName() string {
+// GetImplementationName is an interface method
+func (impl *implementation) GetImplementationName() string {
 	return "qemu-nbd"
+}
+
+// Listen is an interface method
+func (impl *implementation) Listen() error {
+	return nil
 }
 
 // Connect is an interface method
@@ -20,10 +25,5 @@ func (impl *implementation) Connect() error {
 
 // Disconnect is an interface method
 func (impl *implementation) Disconnect() error {
-	return nil
-}
-
-// HandleConnection is an interface method
-func (impl *implementation) HandleConnection() error {
 	return nil
 }
