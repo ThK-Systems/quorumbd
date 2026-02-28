@@ -18,9 +18,9 @@ import (
 const configFileName = "middleware-qemu-nbd.toml"
 
 var (
-	config *Config
-	once          sync.Once
-	loadErr       error
+	config  *Config
+	once    sync.Once
+	loadErr error
 )
 
 type nbdServer struct {
