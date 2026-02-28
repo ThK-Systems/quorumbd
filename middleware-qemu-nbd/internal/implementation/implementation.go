@@ -1,4 +1,4 @@
-// Package implementation implements the adaptor interface of the middleware-common
+// Package implementation implements the adaptor interface of middleware-common
 package implementation
 
 type Implementation struct {
