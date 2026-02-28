@@ -56,7 +56,7 @@ func initialize(cfg config.LoggingConfig) error {
 	return nil
 }
 
-func TerminateLogging() error {
+func CloseLogging() error {
 	if file != nil {
 		return file.Close()
 	}

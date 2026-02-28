@@ -41,5 +41,5 @@ func run() error {
 	}
 
 	// terminate logging
-	return logging.TerminateLogging(config.Get().Logging)
+	return logging.CloseLogging()
 }
