@@ -32,6 +32,7 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) App {
 
 func (app App) Run() error {
 	app.Logger.Info("Middleware is about to start ...")
+	// TODO - Implement middleware application
 	app.Logger.Info("Middleware is exiting ...")
 	return nil
 }
