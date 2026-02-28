@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/pelletier/go-toml/v2"
 	commonconfig "thk-systems.net/quorumbd/common/config"
 	middelwareconfig "thk-systems.net/quorumbd/middleware-common/config"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	toml "github.com/pelletier/go-toml/v2"
 )
 
 const configFileName = "middleware-qemu-nbd.toml"
