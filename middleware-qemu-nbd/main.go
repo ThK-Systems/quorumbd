@@ -8,6 +8,7 @@ import (
 	logging "thk-systems.net/quorumbd/common/logging"
 	app "thk-systems.net/quorumbd/middleware-common/app"
 	config "thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
+	implementation "thk-systems.net/quorumbd/middleware-qemu-nbd/internal/implementation"
 )
 
 func main() {
@@ -30,5 +31,5 @@ func run() error {
 		return err
 	}
 
-	return app.New("qemu-nbd").Run()
+	return app.New(implementation.New(), config.Get().ToMiddlewareConfig()).Run()
 }

@@ -29,8 +29,8 @@ type nbdServer struct {
 
 type Config struct {
 	Common         commonconfig.CommonConfig       `toml:"common"`
-	CoreConnection middelwareconfig.CoreConnection `toml:"coreconnection"`
 	Logging        commonconfig.LoggingConfig      `toml:"logging"`
+	CoreConnection middelwareconfig.CoreConnection `toml:"coreconnection"`
 	NBDServer      nbdServer                       `toml:"nbdserver"`
 }
 
@@ -39,6 +39,13 @@ func Get() *Config {
 		panic("config.Get() called before Load()") // This can never happen
 	}
 	return config
+}
+
+func (cfg *Config) ToMiddlewareConfig() middelwareconfig.Config {
+	return middelwareconfig.Config{
+		Common:         cfg.Common,
+		CoreConnection: cfg.CoreConnection,
+	}
 }
 
 func Load() error {

@@ -1,7 +1,16 @@
 // Package config provides common middleware configuration and validation
 package config
 
-import validation "github.com/go-ozzo/ozzo-validation/v4"
+import (
+	commonconfig "thk-systems.net/quorumbd/common/config"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+)
+
+type Config struct {
+	Common         commonconfig.CommonConfig `toml:"common"`
+	CoreConnection CoreConnection            `toml:"coreconnection"`
+}
 
 type CoreConnection struct {
 	Server         string   `toml:"server"`
