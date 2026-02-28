@@ -1,4 +1,4 @@
-// Package app package is the main app for all middlewares
+// Package app is the main app for all middlewares
 package app
 
 import (
