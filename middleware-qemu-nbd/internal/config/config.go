@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	commonconfig "thk-systems.net/quorumbd/common/config"
-	middelwareconfig "thk-systems.net/quorumbd/middleware-common/config"
+	middlewareconfig "thk-systems.net/quorumbd/middleware-common/config"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	toml "github.com/pelletier/go-toml/v2"
@@ -30,7 +30,7 @@ type nbdServer struct {
 type Config struct {
 	Common         commonconfig.CommonConfig       `toml:"common"`
 	Logging        commonconfig.LoggingConfig      `toml:"logging"`
-	CoreConnection middelwareconfig.CoreConnection `toml:"coreconnection"`
+	CoreConnection middlewareconfig.CoreConnection `toml:"coreconnection"`
 	NBDServer      nbdServer                       `toml:"nbdserver"`
 }
 
@@ -41,8 +41,8 @@ func Get() *Config {
 	return config
 }
 
-func (cfg *Config) ToMiddlewareConfig() *middelwareconfig.Config {
-	return &middelwareconfig.Config{
+func (cfg *Config) ToMiddlewareConfig() *middlewareconfig.Config {
+	return &middlewareconfig.Config{
 		Common:         cfg.Common,
 		CoreConnection: cfg.CoreConnection,
 	}
