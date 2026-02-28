@@ -8,8 +8,7 @@ type CoreConnection struct {
 	ServerFallback []string `toml:"server_fallback"`
 }
 
-func (cfg *CoreConnection) SetDefaults() error {
-	return nil
+func (cfg *CoreConnection) SetDefaults() {
 }
 
 func (cfg *CoreConnection) Validate() error {
