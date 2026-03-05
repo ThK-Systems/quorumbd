@@ -1,8 +1,11 @@
 package coreconnection
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"strings"
+	"time"
 )
 
 type Protocol string
@@ -17,7 +20,7 @@ type CoreConnection struct {
 	address  string
 }
 
-func FromURI(uri string) (*CoreConnection, error) {
+func fromURI(uri string) (*CoreConnection, error) {
 	unixPrefix := string(ProtocolUnix) + "://"
 	tcpPrefix := string(ProtocolTCP) + "://"
 
@@ -36,4 +39,24 @@ func FromURI(uri string) (*CoreConnection, error) {
 	}
 
 	return nil, fmt.Errorf("invalid URI: %s", uri)
+}
+
+func (cc *CoreConnection) toURI() string {
+	return string(cc.protocol) + "://" + cc.address
+}
+
+func (cc *CoreConnection) tryDial(ctx context.Context) (*CoreConnection, error) {
+
+	dialer := net.Dialer{
+		Timeout: 5 * time.Second,
+	}
+
+	conn, err := dialer.DialContext(ctx, string(cc.protocol), cc.address)
+	if err != nil {
+		return nil, err
+	}
+
+	conn.Close()
+
+	return cc, nil
 }
