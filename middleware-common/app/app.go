@@ -19,10 +19,10 @@ var (
 )
 
 type App struct {
-	logger      *slog.Logger
-	config      *config.Config
-	coreManager *coreconnection.CoreManager
-	adaptor     Adaptor
+	logger                *slog.Logger
+	config                *config.Config
+	coreConnectionManager *coreconnection.CoreConnectionManager
+	adaptor               Adaptor
 }
 
 func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, error) {
@@ -34,10 +34,10 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 		return nil, err
 	}
 	newApp := App{
-		logger:      logger,
-		config:      config,
-		coreManager: ccm,
-		adaptor:     adaptor,
+		logger:                logger,
+		config:                config,
+		coreConnectionManager: ccm,
+		adaptor:               adaptor,
 	}
 	newApp.logger = newApp.logger.With("impl", newApp.adaptor.GetImplementationName())
 	return &newApp, nil
@@ -80,7 +80,7 @@ func (app *App) Run() error {
 }
 
 func mainLoop(ctx context.Context, app *App) error {
-	if err := app.coreManager.Probe(ctx, 0, 30*time.Second, false, false); err != nil {
+	if err := app.coreConnectionManager.Probe(ctx, 0, 30*time.Second, false, false); err != nil {
 		return err
 	}
 

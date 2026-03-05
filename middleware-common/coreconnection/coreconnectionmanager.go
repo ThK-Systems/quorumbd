@@ -12,7 +12,7 @@ import (
 	"thk-systems.net/quorumbd/middleware-common/config"
 )
 
-type CoreManager struct {
+type CoreConnectionManager struct {
 	config              *config.CoreConnectionConfig
 	logger              *slog.Logger
 	mutex               sync.RWMutex
@@ -21,7 +21,7 @@ type CoreManager struct {
 	fallbackConnections []*CoreConnection
 }
 
-func New(cfg *config.CoreConnectionConfig, logger *slog.Logger) (*CoreManager, error) {
+func New(cfg *config.CoreConnectionConfig, logger *slog.Logger) (*CoreConnectionManager, error) {
 	primary, err := fromURI(cfg.Server)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func New(cfg *config.CoreConnectionConfig, logger *slog.Logger) (*CoreManager, e
 		fallbacks = append(fallbacks, fallback)
 	}
 
-	return &CoreManager{
+	return &CoreConnectionManager{
 		config:              cfg,
 		logger:              logger.With("module", "coremanager"),
 		primaryConnection:   primary,
@@ -44,7 +44,7 @@ func New(cfg *config.CoreConnectionConfig, logger *slog.Logger) (*CoreManager, e
 	}, nil
 }
 
-func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool, primaryOnly bool) error {
+func (cm *CoreConnectionManager) Probe(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool, primaryOnly bool) error {
 
 	cm.logger.Info("Starting core probe")
 
@@ -94,10 +94,10 @@ func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, 
 	}
 }
 
-func (cm *CoreManager) IsConnected() bool {
+func (cm *CoreConnectionManager) IsConnected() bool {
 	return cm.currentConnection.Load() != nil
 }
 
-func (cm *CoreManager) IsPrimary() bool {
+func (cm *CoreConnectionManager) IsPrimary() bool {
 	return cm.IsConnected() && cm.currentConnection.Load() == cm.primaryConnection
 }
