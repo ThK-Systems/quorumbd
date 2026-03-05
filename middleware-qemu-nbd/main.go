@@ -26,17 +26,20 @@ func run() error {
 	}
 
 	// init logging
-	err = logging.Initialize(config.Get().Logging)
+	err = logging.Initialize(config.Get().LoggingConfig)
 	if err != nil {
 		return err
 	}
 
-	err = app.New(
+	app, err := app.New(
 		implementation.New(config.Get(), logging.GetDefaultLogger()),
 		config.Get().ToMiddlewareConfig(),
 		logging.GetDefaultLogger(),
-	).Run()
+	)
 	if err != nil {
+		return err
+	}
+	if err := app.Run(); err != nil {
 		return err
 	}
 

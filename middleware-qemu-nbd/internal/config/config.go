@@ -23,15 +23,15 @@ var (
 	loadErr error
 )
 
-type nbdServer struct {
+type nbdServerConfig struct {
 	Socket string `toml:"socket"`
 }
 
 type Config struct {
-	Common         commonconfig.CommonConfig       `toml:"common"`
-	Logging        commonconfig.LoggingConfig      `toml:"logging"`
-	CoreConnection middlewareconfig.CoreConnection `toml:"coreconnection"`
-	NBDServer      nbdServer                       `toml:"nbdserver"`
+	CommonConfig         commonconfig.CommonConfig             `toml:"common"`
+	LoggingConfig        commonconfig.LoggingConfig            `toml:"logging"`
+	CoreConnectionConfig middlewareconfig.CoreConnectionConfig `toml:"coreconnection"`
+	NBDServerConfig      nbdServerConfig                       `toml:"nbdserver"`
 }
 
 func Get() *Config {
@@ -43,8 +43,8 @@ func Get() *Config {
 
 func (cfg *Config) ToMiddlewareConfig() *middlewareconfig.Config {
 	return &middlewareconfig.Config{
-		Common:         cfg.Common,
-		CoreConnection: cfg.CoreConnection,
+		CommonConfig:         cfg.CommonConfig,
+		CoreConnectionConfig: cfg.CoreConnectionConfig,
 	}
 }
 
@@ -79,25 +79,25 @@ func load() error {
 }
 
 func (cfg *Config) setDefaults() {
-	cfg.Common.SetDefaults()
-	cfg.Logging.SetDefaults()
-	cfg.CoreConnection.SetDefaults()
-	cfg.NBDServer.setDefaults()
+	cfg.CommonConfig.SetDefaults()
+	cfg.LoggingConfig.SetDefaults()
+	cfg.CoreConnectionConfig.SetDefaults()
+	cfg.NBDServerConfig.setDefaults()
 }
 
-func (cfg *nbdServer) setDefaults() {
+func (cfg *nbdServerConfig) setDefaults() {
 	cfg.Socket = filepath.Join("/", "var", "run", "quorumbd", "main.sock")
 }
 
 func (cfg *Config) validate() error {
-	commonErrors := cfg.Common.Validate()
-	loggingErrors := cfg.Logging.Validate()
-	coreConnectionErrors := cfg.CoreConnection.Validate()
-	nbdServerErrors := cfg.NBDServer.validate()
+	commonErrors := cfg.CommonConfig.Validate()
+	loggingErrors := cfg.LoggingConfig.Validate()
+	coreConnectionErrors := cfg.CoreConnectionConfig.Validate()
+	nbdServerErrors := cfg.NBDServerConfig.validate()
 	return commonconfig.MergeValidationErrors(commonErrors, loggingErrors, coreConnectionErrors, nbdServerErrors)
 }
 
-func (cfg *nbdServer) validate() error {
+func (cfg *nbdServerConfig) validate() error {
 	return validation.Errors{
 		"nbdserver": validation.ValidateStruct(cfg, validation.Field(&cfg.Socket, validation.Required.Error("nbdserver.socket required"))),
 	}.Filter()

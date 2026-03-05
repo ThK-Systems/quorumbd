@@ -8,6 +8,6 @@ type Adaptor interface {
 
 // TODO: Receive
 // TODO: Reply
-// TODO: Common structs and mapper for receive and reply
+// TODO: Common structs and commands and mapper for receive and reply
 
 // TODO: Maybe HandleConnection

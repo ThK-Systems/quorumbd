@@ -2,9 +2,14 @@
 package app
 
 import (
+	"context"
 	"log/slog"
+	"os/signal"
+	"syscall"
 
-	config "thk-systems.net/quorumbd/middleware-common/config"
+	"thk-systems.net/quorumbd/common/helper/synchelper"
+	"thk-systems.net/quorumbd/middleware-common/config"
+	"thk-systems.net/quorumbd/middleware-common/coreconnection"
 )
 
 var (
@@ -12,27 +17,62 @@ var (
 )
 
 type App struct {
-	Logger  *slog.Logger
-	Config  *config.Config
-	Adaptor Adaptor
+	logger      *slog.Logger
+	config      *config.Config
+	coreManager *coreconnection.CoreManager
+	adaptor     Adaptor
 }
 
-func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) App {
+func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, error) {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	newApp := App{
-		Logger:  logger,
-		Config:  config,
-		Adaptor: adaptor,
+	ccm, err := coreconnection.New(&config.CoreConnectionConfig)
+	if err != nil {
+		return nil, err
 	}
-	newApp.Logger = newApp.Logger.With("impl", newApp.Adaptor.GetImplementationName())
-	return newApp
+	newApp := App{
+		logger:      logger,
+		config:      config,
+		coreManager: ccm,
+		adaptor:     adaptor,
+	}
+	newApp.logger = newApp.logger.With("impl", newApp.adaptor.GetImplementationName())
+	return &newApp, nil
 }
 
-func (app App) Run() error {
-	app.Logger.Info("Middleware is about to start ...")
-	// TODO - Implement middleware application
-	app.Logger.Info("Middleware is exiting ...")
-	return nil
+func (app *App) Run() error {
+	app.logger.Info("Middleware is about to start ...")
+	tg := synchelper.TaskGroup{}
+
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
+	errCh := make(chan error, 1)
+
+	tg.Go(func() {
+		mainLoop(ctx, errCh, app)
+	})
+
+	select {
+
+	case err := <-errCh:
+		return err
+
+	case <-ctx.Done():
+		tg.Wait() // Waiting for task group to complete
+
+		app.logger.Info("Middleware is exiting ...")
+		return nil
+
+	}
+}
+
+func mainLoop(ctx context.Context, errCh chan<- error, app *App) {
+	<-ctx.Done()
+	errCh <- nil
 }

@@ -8,19 +8,19 @@ import (
 )
 
 type Config struct {
-	Common         commonconfig.CommonConfig `toml:"common"`
-	CoreConnection CoreConnection            `toml:"coreconnection"`
+	CommonConfig         commonconfig.CommonConfig `toml:"common"`
+	CoreConnectionConfig CoreConnectionConfig      `toml:"coreconnection"`
 }
 
-type CoreConnection struct {
+type CoreConnectionConfig struct {
 	Server         string   `toml:"server"`
 	ServerFallback []string `toml:"server_fallback"`
 }
 
-func (cfg *CoreConnection) SetDefaults() {
+func (cfg *CoreConnectionConfig) SetDefaults() {
 }
 
-func (cfg *CoreConnection) Validate() error {
+func (cfg *CoreConnectionConfig) Validate() error {
 	return validation.Errors{
 		"coreconnection": validation.ValidateStruct(cfg,
 			validation.Field(&cfg.Server, validation.Required.Error("core.server required")),
