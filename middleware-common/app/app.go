@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os/signal"
 	"syscall"
@@ -44,7 +45,6 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 
 func (app *App) Run() error {
 	app.logger.Info("Middleware is about to start ...")
-	tg := synchelper.TaskGroup{}
 
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
@@ -55,38 +55,38 @@ func (app *App) Run() error {
 
 	errCh := make(chan error, 1)
 
+	tg := synchelper.TaskGroup{}
 	tg.Go(func() {
-		mainLoop(ctx, errCh, app)
+		errCh <- mainLoop(ctx, app)
 	})
 
+	var err error
+
 	select {
-
-	case err := <-errCh:
+	case err = <-errCh:
 		stop()
-		tg.Wait()
-		return err
-
 	case <-ctx.Done():
-		tg.Wait() // Waiting for task group to complete
+		stop()
+		err = <-errCh
+	}
 
+	tg.Wait()
+
+	if err == nil || errors.Is(err, context.Canceled) {
 		app.logger.Info("Middleware is exiting ...")
 		return nil
-
 	}
+	return err
 }
 
-func mainLoop(ctx context.Context, errCh chan<- error, app *App) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
+func mainLoop(ctx context.Context, app *App) error {
 	if err := app.coreManager.Probe(ctx, 0, 30*time.Second, false, false); err != nil {
-		errCh <- err
-		return
+		return err
 	}
 
 	// TODO: Start control Loops
 	// TODO: Start nbd list (by adapter)
 
 	<-ctx.Done()
-	errCh <- nil
+	return ctx.Err()
 }
