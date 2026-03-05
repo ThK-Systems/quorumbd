@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"thk-systems.net/quorumbd/middleware-common/config"
@@ -13,7 +15,8 @@ import (
 type CoreManager struct {
 	config              *config.CoreConnectionConfig
 	logger              *slog.Logger
-	currentConnection   *CoreConnection
+	mutex               sync.RWMutex
+	currentConnection   atomic.Pointer[CoreConnection]
 	primaryConnection   *CoreConnection
 	fallbackConnections []*CoreConnection
 }
@@ -36,7 +39,6 @@ func New(cfg *config.CoreConnectionConfig, logger *slog.Logger) (*CoreManager, e
 	return &CoreManager{
 		config:              cfg,
 		logger:              logger.With("module", "coremanager"),
-		currentConnection:   nil,
 		primaryConnection:   primary,
 		fallbackConnections: fallbacks,
 	}, nil
@@ -46,7 +48,10 @@ func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, 
 
 	cm.logger.Info("Starting core probe")
 
-	var err error
+	var (
+		err  error
+		conn *CoreConnection
+	)
 	backoff := min(initialBackoff, maxBackoff)
 
 	for {
@@ -60,9 +65,10 @@ func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, 
 
 		// 2. try primary
 		cm.logger.Debug("Probing primary core connection", "address", cm.primaryConnection.toURI())
-		cm.currentConnection, err = cm.primaryConnection.tryDial(ctx)
+		conn, err = cm.primaryConnection.tryDial(ctx)
 		if err == nil {
 			cm.logger.Info("Primary core connection is reachable", "address", cm.primaryConnection.toURI())
+			cm.currentConnection.Store(conn)
 			return nil
 		}
 
@@ -70,9 +76,10 @@ func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, 
 		if !primaryOnly {
 			for _, fb := range cm.fallbackConnections {
 				cm.logger.Debug("Probing fallback core connection", "address", fb.toURI())
-				cm.currentConnection, err = fb.tryDial(ctx)
+				conn, err = fb.tryDial(ctx)
 				if err == nil {
 					cm.logger.Info("Fallback core connection is reachable", "address", fb.toURI())
+					cm.currentConnection.Store(conn)
 					return nil
 				}
 			}
@@ -88,9 +95,9 @@ func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, 
 }
 
 func (cm *CoreManager) IsConnected() bool {
-	return cm.currentConnection != nil
+	return cm.currentConnection.Load() != nil
 }
 
 func (cm *CoreManager) IsPrimary() bool {
-	return cm.IsConnected() && cm.currentConnection == cm.primaryConnection
+	return cm.IsConnected() && cm.currentConnection.Load() == cm.primaryConnection
 }
