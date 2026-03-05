@@ -42,7 +42,7 @@ func New(cfg *config.CoreConnectionConfig, logger *slog.Logger) (*CoreManager, e
 	}, nil
 }
 
-func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool) error {
+func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool, primaryOnly bool) error {
 
 	cm.logger.Info("Starting core probe")
 
@@ -51,7 +51,7 @@ func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, 
 
 	for {
 		// 1. wait or shutdown
-		cm.logger.Info("Probing core connections", "retry_in", backoff.String())
+		cm.logger.Info("Probing core connection(s)", "retry_in", backoff.String())
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -67,12 +67,14 @@ func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, 
 		}
 
 		// 3. try fallbacks
-		for _, fb := range cm.fallbackConnections {
-			cm.logger.Debug("Probing fallback core connection", "address", fb.toURI())
-			cm.currentConnection, err = fb.tryDial(ctx)
-			if err == nil {
-				cm.logger.Info("Fallback core connection is reachable", "address", fb.toURI())
-				return nil
+		if !primaryOnly {
+			for _, fb := range cm.fallbackConnections {
+				cm.logger.Debug("Probing fallback core connection", "address", fb.toURI())
+				cm.currentConnection, err = fb.tryDial(ctx)
+				if err == nil {
+					cm.logger.Info("Fallback core connection is reachable", "address", fb.toURI())
+					return nil
+				}
 			}
 		}
 
@@ -80,7 +82,7 @@ func (cm *CoreManager) Probe(ctx context.Context, initialBackoff time.Duration, 
 		if backoff < maxBackoff {
 			backoff = min(max(backoff, 1*time.Second)*2, maxBackoff)
 		} else if !probeInfinitely {
-			return fmt.Errorf("no reachable core connection (primary + %d fallbacks)", len(cm.fallbackConnections))
+			return fmt.Errorf("core connections not reachable")
 		}
 	}
 }

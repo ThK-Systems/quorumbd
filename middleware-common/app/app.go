@@ -79,7 +79,7 @@ func mainLoop(ctx context.Context, errCh chan<- error, app *App) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if err := app.coreManager.Probe(ctx, 0, 30*time.Second, false); err != nil {
+	if err := app.coreManager.Probe(ctx, 0, 30*time.Second, false, false); err != nil {
 		errCh <- err
 		return
 	}
