@@ -13,7 +13,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
 }
@@ -39,6 +39,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
 	if err := app.Run(); err != nil {
 		return err
 	}
