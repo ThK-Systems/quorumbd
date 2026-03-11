@@ -1,4 +1,4 @@
-module thk-systems.net/quorumbd/common
+module quorumbd.net/common
 
 go 1.26.0
 

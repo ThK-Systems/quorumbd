@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"thk-systems.net/quorumbd/common/helper/synchelper"
-	"thk-systems.net/quorumbd/middleware-common/config"
-	"thk-systems.net/quorumbd/middleware-common/coreconnection"
+	"quorumbd.net/common/helper/synchelper"
+	"quorumbd.net/middleware-common/config"
+	"quorumbd.net/middleware-common/coreconnection"
 )
 
 var (
@@ -19,10 +19,10 @@ var (
 )
 
 type App struct {
-	logger                *slog.Logger
-	config                *config.Config
-	coreConnectionManager *coreconnection.CoreSupervisor
-	adaptor               Adaptor
+	logger         *slog.Logger
+	config         *config.Config
+	coreSupervisor *coreconnection.CoreSupervisor
+	adaptor        Adaptor
 }
 
 func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, error) {
@@ -30,16 +30,16 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 		logger = slog.Default()
 	}
 
-	ccm, err := coreconnection.New(&config.CoreConnectionConfig, logger)
+	cs, err := coreconnection.New(&config.CoreConnectionConfig, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	newApp := App{
-		logger:                logger,
-		config:                config,
-		coreConnectionManager: ccm,
-		adaptor:               adaptor,
+		logger:         logger,
+		config:         config,
+		coreSupervisor: cs,
+		adaptor:        adaptor,
 	}
 
 	newApp.logger = newApp.logger.With("impl", newApp.adaptor.GetImplementationName())
@@ -83,7 +83,7 @@ func (app *App) Run() error {
 }
 
 func mainLoop(ctx context.Context, app *App) error {
-	if _, err := app.coreConnectionManager.Probe(ctx, 0, 30*time.Second, false, false); err != nil { // DO NOT USE Probe, use Connect or something like that and make Probe private
+	if _, err := app.coreSupervisor.Probe(ctx, 0, 30*time.Second, false, false); err != nil { // DO NOT USE Probe, use Connect or something like that and make Probe private
 		return err
 	}
 

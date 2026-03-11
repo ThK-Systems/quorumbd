@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	logging "thk-systems.net/quorumbd/common/logging"
-	app "thk-systems.net/quorumbd/middleware-common/app"
-	config "thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
-	implementation "thk-systems.net/quorumbd/middleware-qemu-nbd/internal/implementation"
+	logging "quorumbd.net/common/logging"
+	app "quorumbd.net/middleware-common/app"
+	config "quorumbd.net/middleware-qemu-nbd/internal/config"
+	implementation "quorumbd.net/middleware-qemu-nbd/internal/implementation"
 )
 
 func main() {

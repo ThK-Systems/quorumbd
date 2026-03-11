@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"thk-systems.net/quorumbd/middleware-common/config"
+	"quorumbd.net/middleware-common/config"
 )
 
 type CoreSupervisor struct {

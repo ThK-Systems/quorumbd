@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	commonconfig "thk-systems.net/quorumbd/common/config"
-	middlewareconfig "thk-systems.net/quorumbd/middleware-common/config"
+	commonconfig "quorumbd.net/common/config"
+	middlewareconfig "quorumbd.net/middleware-common/config"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	toml "github.com/pelletier/go-toml/v2"

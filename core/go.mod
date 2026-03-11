@@ -1,5 +1,5 @@
-module thk-systems.net/quorumbd/core
+module quorumbd.net/core
 
 go 1.26.0
 
-replace thk-systems.net/quorumbd/common => ../common
+replace quorumbd.net/common => ../common

@@ -6,7 +6,7 @@ import (
 	"net"
 	"strings"
 
-	commonconfig "thk-systems.net/quorumbd/common/config"
+	commonconfig "quorumbd.net/common/config"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )

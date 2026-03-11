@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"thk-systems.net/quorumbd/middleware-qemu-nbd/internal/config"
+	"quorumbd.net/middleware-qemu-nbd/internal/config"
 )
 
 type Implementation struct {

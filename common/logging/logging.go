@@ -8,7 +8,7 @@ import (
 	"os"
 	"sync"
 
-	"thk-systems.net/quorumbd/common/config"
+	"quorumbd.net/common/config"
 )
 
 var (
