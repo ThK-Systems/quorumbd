@@ -21,7 +21,7 @@ var (
 type App struct {
 	logger                *slog.Logger
 	config                *config.Config
-	coreConnectionManager *coreconnection.CoreConnectionManager
+	coreConnectionManager *coreconnection.CoreSupervisor
 	adaptor               Adaptor
 }
 
@@ -29,16 +29,19 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 	if logger == nil {
 		logger = slog.Default()
 	}
+
 	ccm, err := coreconnection.New(&config.CoreConnectionConfig, logger)
 	if err != nil {
 		return nil, err
 	}
+
 	newApp := App{
 		logger:                logger,
 		config:                config,
 		coreConnectionManager: ccm,
 		adaptor:               adaptor,
 	}
+
 	newApp.logger = newApp.logger.With("impl", newApp.adaptor.GetImplementationName())
 	return &newApp, nil
 }
@@ -80,12 +83,12 @@ func (app *App) Run() error {
 }
 
 func mainLoop(ctx context.Context, app *App) error {
-	if err := app.coreConnectionManager.Probe(ctx, 0, 30*time.Second, false, false); err != nil {
+	if _, err := app.coreConnectionManager.Probe(ctx, 0, 30*time.Second, false, false); err != nil { // DO NOT USE Probe, use Connect or something like that and make Probe private
 		return err
 	}
 
-	// TODO: Start control Loops
-	// TODO: Start nbd list (by adapter)
+	// TODO: Start ControlSuperVisor
+	// TODO: Start DiskSuperVisor
 
 	<-ctx.Done()
 	return ctx.Err()

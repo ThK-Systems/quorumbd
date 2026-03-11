@@ -15,24 +15,24 @@ const (
 	ProtocolTCP  Protocol = "tcp"
 )
 
-type CoreConnection struct {
+type CoreEndpoint struct {
 	protocol Protocol
 	address  string
 }
 
-func fromURI(uri string) (*CoreConnection, error) {
+func fromURI(uri string) (*CoreEndpoint, error) {
 	unixPrefix := string(ProtocolUnix) + "://"
 	tcpPrefix := string(ProtocolTCP) + "://"
 
 	switch {
 	case strings.HasPrefix(uri, unixPrefix):
-		return &CoreConnection{
+		return &CoreEndpoint{
 			protocol: ProtocolUnix,
 			address:  strings.TrimPrefix(uri, unixPrefix),
 		}, nil
 
 	case strings.HasPrefix(uri, tcpPrefix):
-		return &CoreConnection{
+		return &CoreEndpoint{
 			protocol: ProtocolTCP,
 			address:  strings.TrimPrefix(uri, tcpPrefix),
 		}, nil
@@ -41,22 +41,22 @@ func fromURI(uri string) (*CoreConnection, error) {
 	return nil, fmt.Errorf("invalid URI: %s", uri)
 }
 
-func (cc *CoreConnection) toURI() string {
-	return string(cc.protocol) + "://" + cc.address
+func (ce *CoreEndpoint) toURI() string {
+	return string(ce.protocol) + "://" + ce.address
 }
 
-func (cc *CoreConnection) tryDial(ctx context.Context) (*CoreConnection, error) {
+func (ce *CoreEndpoint) tryDial(ctx context.Context) (*CoreEndpoint, error) {
 
 	dialer := net.Dialer{
 		Timeout: 5 * time.Second,
 	}
 
-	conn, err := dialer.DialContext(ctx, string(cc.protocol), cc.address)
+	conn, err := dialer.DialContext(ctx, string(ce.protocol), ce.address)
 	if err != nil {
 		return nil, err
 	}
 
 	conn.Close()
 
-	return cc, nil
+	return ce, nil
 }
