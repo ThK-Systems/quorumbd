@@ -23,6 +23,7 @@ type App struct {
 	config         *config.Config
 	coreSupervisor *coreconnection.CoreSupervisor
 	adaptor        Adaptor
+	dispatcher     *dispatcher
 }
 
 func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, error) {
@@ -42,6 +43,9 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 		adaptor:        adaptor,
 	}
 
+	dispatcher := newDispatcher(&newApp)
+	newApp.dispatcher = dispatcher
+
 	newApp.logger = newApp.logger.With("impl", newApp.adaptor.GetImplementationName())
 	return &newApp, nil
 }
@@ -56,12 +60,19 @@ func (app *App) Run() error {
 	)
 	defer stop()
 
+	if err := app.coreSupervisor.Try(ctx, 0, 30*time.Second, false); err != nil {
+		return err
+	}
+
 	errCh := make(chan error, 1)
 
 	tg := synchelper.TaskGroup{}
 	tg.Go(func() {
-		errCh <- mainLoop(ctx, app)
+		errCh <- app.dispatcher.run(ctx)
 	})
+
+	// TODO: Do Listen here
+	// TODO: Start DiskSuperVisor as go routine
 
 	var err error
 
@@ -82,13 +93,9 @@ func (app *App) Run() error {
 	return err
 }
 
-func mainLoop(ctx context.Context, app *App) error {
-	if _, err := app.coreSupervisor.Probe(ctx, 0, 30*time.Second, false, false); err != nil { // DO NOT USE Probe, use Connect or something like that and make Probe private
-		return err
-	}
+func controlLoop(ctx context.Context, app *App) error {
 
 	// TODO: Start ControlSuperVisor
-	// TODO: Start DiskSuperVisor
 
 	<-ctx.Done()
 	return ctx.Err()

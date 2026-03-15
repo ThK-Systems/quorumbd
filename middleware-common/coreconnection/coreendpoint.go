@@ -45,18 +45,26 @@ func (ce *CoreEndpoint) toURI() string {
 	return string(ce.protocol) + "://" + ce.address
 }
 
-func (ce *CoreEndpoint) tryDial(ctx context.Context) (*CoreEndpoint, error) {
+func (ce *CoreEndpoint) tryDial(ctx context.Context) error {
+	conn, err := ce.dial(ctx)
+	if err != nil {
+		conn.Close()
+		return err
+	}
+	return nil
+}
 
+func (ce *CoreEndpoint) dial(ctx context.Context) (net.Conn, error) {
 	dialer := net.Dialer{
 		Timeout: 5 * time.Second,
 	}
-
 	conn, err := dialer.DialContext(ctx, string(ce.protocol), ce.address)
 	if err != nil {
 		return nil, err
 	}
+	return conn, nil
+}
 
-	conn.Close()
-
-	return ce, nil
+func (ce *CoreEndpoint) String() string {
+	return ce.toURI()
 }
