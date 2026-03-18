@@ -48,9 +48,9 @@ func (ce *CoreEndpoint) toURI() string {
 func (ce *CoreEndpoint) tryDial(ctx context.Context) error {
 	conn, err := ce.dial(ctx)
 	if err != nil {
-		conn.Close()
 		return err
 	}
+	conn.Close()
 	return nil
 }
 

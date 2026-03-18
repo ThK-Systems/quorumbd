@@ -2,8 +2,8 @@ package app
 
 type Adaptor interface {
 	GetImplementationName() string
+	IsServer() bool
 	Listen() error
-	Disconnect() error
 }
 
 // TODO: Receive

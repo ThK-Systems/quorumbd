@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"quorumbd.net/common/helper/synchelper"
+	"golang.org/x/sync/errgroup"
 	"quorumbd.net/middleware-common/config"
 	"quorumbd.net/middleware-common/coreconnection"
 )
@@ -64,39 +64,31 @@ func (app *App) Run() error {
 		return err
 	}
 
-	errCh := make(chan error, 1)
+	var g errgroup.Group
+	var workerExitCh = make(chan WorkerExit, 32)
 
-	tg := synchelper.TaskGroup{}
-	tg.Go(func() {
-		errCh <- app.dispatcher.run(ctx)
-	})
+	if app.coreSupervisor.IsConnected() {
+		g.Go(func() error {
+			return app.dispatcher.run(ctx, workerExitCh)
+			// TODO: Do Listen here and start disk worker
+		})
+	outer:
+		for {
+			select {
+			case <-ctx.Done():
+				break outer
+			case <-workerExitCh:
+				// TODO: reconnect
+			}
 
-	// TODO: Do Listen here
-	// TODO: Start DiskSuperVisor as go routine
-
-	var err error
-
-	select {
-	case err = <-errCh:
-		stop()
-	case <-ctx.Done():
-		stop()
-		err = <-errCh
+		}
 	}
 
-	tg.Wait()
+	err := g.Wait()
 
 	if err == nil || errors.Is(err, context.Canceled) {
 		app.logger.Info("Middleware is exiting ...")
 		return nil
 	}
 	return err
-}
-
-func controlLoop(ctx context.Context, app *App) error {
-
-	// TODO: Start ControlSuperVisor
-
-	<-ctx.Done()
-	return ctx.Err()
 }

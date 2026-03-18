@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"net"
-	"sync"
 
 	"quorumbd.net/common/control"
 )
@@ -27,7 +26,11 @@ func newDispatcher(app *App) *dispatcher {
 	}
 }
 
-func (dispatcher *dispatcher) run(parentCtx context.Context) error {
+func (dispatcher *dispatcher) restartOnCoreReconnect() bool {
+	return true
+}
+
+func (dispatcher *dispatcher) run(parentCtx context.Context, workerExitCh chan<- WorkerExit) error {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
@@ -36,16 +39,10 @@ func (dispatcher *dispatcher) run(parentCtx context.Context) error {
 	if err != nil {
 		return err
 	}
-	dispatcher.logger.Info("Connected to %s with epoch %03d", dispatcher.conn.RemoteAddr().String(), dispatcher.connEpoch)
+	defer dispatcher.conn.Close()
+	dispatcher.logger.Info("Connected", "address", dispatcher.conn.RemoteAddr().String(), "epoch", dispatcher.connEpoch)
 
 	errCh := make(chan error, 2)
-
-	var once sync.Once
-	closeConn := func() {
-		once.Do(func() {
-			dispatcher.conn.Close()
-		})
-	}
 
 	go func() {
 		dispatcher.logger.Info("Starting receive loop")
@@ -58,20 +55,31 @@ func (dispatcher *dispatcher) run(parentCtx context.Context) error {
 	}()
 
 	err = <-errCh
-
 	cancel()
-	closeConn()
-
 	<-errCh
+
+	workerExit := newWorkerExit(dispatcher, err)
+	workerExitCh <- workerExit
+
+	dispatcher.logger.Error("dispatcher exit", "kind", workerExit.kind.String(), "err", workerExit.err)
+
 	return err
 }
 
 func sendLoop(ctx context.Context, conn net.Conn) error {
-	// TODO: Implement
-	panic("unimplemented")
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
 
 func recvLoop(ctx context.Context, conn net.Conn) error {
-	// TODO: Implement
-	panic("unimplemented")
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }

@@ -25,12 +25,11 @@ func (impl *Implementation) GetImplementationName() string {
 	return "qemu-nbd"
 }
 
-// Listen is an interface method of common-middleware.Adapter
-func (impl *Implementation) Listen() error {
-	return errors.New("not implemented")
+func (impl *Implementation) IsServer() bool {
+	return true
 }
 
-// Disconnect is an interface method of common-middleware.Adapter
-func (impl *Implementation) Disconnect() error {
+// Listen is an interface method of common-middleware.Adapter
+func (impl *Implementation) Listen() error {
 	return errors.New("not implemented")
 }
