@@ -1,8 +1,13 @@
 package app
 
-import errorhelper "quorumbd.net/common/helper/errorhelper"
+import (
+	"context"
+
+	errorhelper "quorumbd.net/common/helper/errorhelper"
+)
 
 type Worker interface {
+	run(parentCtx context.Context, workerExitCh chan<- WorkerExit) error
 	restartOnCoreReconnect() bool
 	getCoreConnectionEpoch() uint32
 }
