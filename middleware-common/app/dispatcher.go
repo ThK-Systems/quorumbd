@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"sync/atomic"
 
 	"quorumbd.net/common/control"
 )
@@ -12,7 +13,7 @@ type dispatcher struct {
 	app       *App
 	logger    *slog.Logger
 	conn      net.Conn
-	connEpoch uint32
+	connEpoch atomic.Uint32
 	toCore    chan<- control.ControlMessage
 	fromCore  <-chan control.ControlMessage
 }
@@ -30,17 +31,25 @@ func (dispatcher *dispatcher) restartOnCoreReconnect() bool {
 	return true
 }
 
+func (dispatcher *dispatcher) getCoreConnectionEpoch() uint32 {
+	return uint32(dispatcher.connEpoch.Load())
+}
+
 func (dispatcher *dispatcher) run(parentCtx context.Context, workerExitCh chan<- WorkerExit) error {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
-	var err error
-	dispatcher.conn, dispatcher.connEpoch, err = dispatcher.app.coreSupervisor.Dial(ctx)
+	var (
+		err error
+		connEpoch uint32
+	)
+	dispatcher.conn, connEpoch, err = dispatcher.app.coreSupervisor.Dial(ctx)
+	dispatcher.connEpoch.Store(connEpoch)
 	if err != nil {
 		return err
 	}
 	defer dispatcher.conn.Close()
-	dispatcher.logger.Info("Connected", "address", dispatcher.conn.RemoteAddr().String(), "epoch", dispatcher.connEpoch)
+	dispatcher.logger.Info("Connected", "address", dispatcher.conn.RemoteAddr().String(), "epoch", dispatcher.connEpoch.Load())
 
 	errCh := make(chan error, 2)
 
