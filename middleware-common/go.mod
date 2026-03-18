@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+	github.com/google/uuid v1.6.0
 	golang.org/x/sync v0.20.0
 	quorumbd.net/common v0.0.0-00010101000000-000000000000
 )
