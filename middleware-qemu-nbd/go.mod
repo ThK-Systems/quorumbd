@@ -9,6 +9,8 @@ require (
 	quorumbd.net/middleware-common v0.0.0-00010101000000-000000000000
 )
 
+require golang.org/x/sync v0.20.0 // indirect
+
 replace quorumbd.net/common => ../common
 
 replace quorumbd.net/middleware-common => ../middleware-common
