@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,6 +19,7 @@ type CoreSupervisor struct {
 	connectionEpoch   atomic.Uint32
 	currentEndpoint   atomic.Pointer[CoreEndpoint]
 	primaryEndpoint   *CoreEndpoint
+	fbeMutex          sync.RWMutex
 	fallbackEndpoints []*CoreEndpoint
 }
 
@@ -69,11 +71,20 @@ func (cs *CoreSupervisor) Dial(ctx context.Context) (net.Conn, uint32, error) {
 }
 
 func (cs *CoreSupervisor) Try(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool) error {
-	return cs.Retry(ctx, initialBackoff, maxBackoff, probeInfinitely, false)
+	return cs.Retry(ctx, initialBackoff, maxBackoff, probeInfinitely, false, nil)
 }
 
-func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool, primaryOnly bool) error {
-	cs.logger.Info("Starting core probe")
+func (cs *CoreSupervisor) RetryPrimary(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration) error {
+	return cs.Retry(ctx, initialBackoff, maxBackoff, true, true, nil)
+}
+
+func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool, primaryOnly bool, endpointToExclude *CoreEndpoint) error {
+
+	exclude := "none"
+	if endpointToExclude != nil {
+		exclude = endpointToExclude.toURI()
+	}
+	cs.logger.Info("Starting core probe", "excluding", exclude, "primary_only", primaryOnly, "infinitely", probeInfinitely)
 
 	var err error
 	backoff := min(initialBackoff, maxBackoff)
@@ -88,17 +99,25 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 		}
 
 		// 2. try primary
-		cs.logger.Debug("Probing primary core endpoint", "address", cs.primaryEndpoint.toURI())
-		err = cs.primaryEndpoint.tryDial(ctx)
-		if err == nil {
-			cs.logger.Info("Primary core endpoint is reachable", "address", cs.primaryEndpoint.toURI())
-			cs.setNewCurrentEndpoint(cs.primaryEndpoint)
-			return nil
+		if endpointToExclude != cs.primaryEndpoint {
+			cs.logger.Debug("Probing primary core endpoint", "address", cs.primaryEndpoint.toURI())
+			err = cs.primaryEndpoint.tryDial(ctx)
+			if err == nil {
+				cs.logger.Info("Primary core endpoint is reachable", "address", cs.primaryEndpoint.toURI())
+				cs.setNewCurrentEndpoint(cs.primaryEndpoint)
+				return nil
+			}
 		}
 
 		// 3. try fallbacks
 		if !primaryOnly {
-			for _, fb := range cs.fallbackEndpoints {
+			cs.fbeMutex.RLock()
+			fallbacks := cs.fallbackEndpoints
+			cs.fbeMutex.RUnlock()
+			for _, fb := range fallbacks {
+				if fb == endpointToExclude {
+					break
+				}
 				cs.logger.Debug("Probing fallback core connection", "address", fb.toURI())
 				err = fb.tryDial(ctx)
 				if err == nil {
