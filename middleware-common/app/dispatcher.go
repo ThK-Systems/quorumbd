@@ -51,16 +51,18 @@ func (dispatcher *dispatcher) run(parentCtx context.Context, workerExitCh chan<-
 	defer dispatcher.conn.Close()
 	dispatcher.logger.Info("Connected", "address", dispatcher.conn.RemoteAddr().String(), "epoch", dispatcher.connEpoch.Load())
 
+	// TODO: Send header: "CTRL<UUID>"
+
 	errCh := make(chan error, 2)
 
 	go func() {
 		dispatcher.logger.Info("Starting receive loop")
-		errCh <- recvLoop(ctx, dispatcher.conn)
+		errCh <- recvLoop(ctx, dispatcher.conn, dispatcher.fromCore)
 	}()
 
 	go func() {
 		dispatcher.logger.Info("Starting send loop")
-		errCh <- sendLoop(ctx, dispatcher.conn)
+		errCh <- sendLoop(ctx, dispatcher.conn, dispatcher.toCore)
 	}()
 
 	err = <-errCh
@@ -75,7 +77,7 @@ func (dispatcher *dispatcher) run(parentCtx context.Context, workerExitCh chan<-
 	return err
 }
 
-func sendLoop(ctx context.Context, conn net.Conn) error {
+func sendLoop(ctx context.Context, conn net.Conn, toCore chan <- control.ControlMessage) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -84,7 +86,7 @@ func sendLoop(ctx context.Context, conn net.Conn) error {
 	}
 }
 
-func recvLoop(ctx context.Context, conn net.Conn) error {
+func recvLoop(ctx context.Context, conn net.Conn, fromCore <- chan control.ControlMessage) error {
 	for {
 		select {
 		case <-ctx.Done():
