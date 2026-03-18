@@ -4,6 +4,7 @@ import errorhelper "quorumbd.net/common/helper/errorhelper"
 
 type Worker interface {
 	restartOnCoreReconnect() bool
+	getCoreConnectionEpoch() uint32
 }
 
 type WorkerExit struct {
