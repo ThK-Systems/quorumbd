@@ -90,7 +90,8 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 	backoff := min(initialBackoff, maxBackoff)
 
 	for {
-		// 1. wait or shutdown
+		// wait or shutdown
+		tryCount := 0
 		cs.logger.Info("Probing core endpoint(s)", "retry_in", backoff.String())
 		select {
 		case <-ctx.Done():
@@ -98,8 +99,9 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 		case <-time.After(backoff):
 		}
 
-		// 2. try primary
+		// try primary
 		if endpointToExclude != cs.primaryEndpoint {
+			tryCount++
 			cs.logger.Debug("Probing primary core endpoint", "address", cs.primaryEndpoint.toURI())
 			err = cs.primaryEndpoint.tryDial(ctx)
 			if err == nil {
@@ -109,7 +111,7 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 			}
 		}
 
-		// 3. try fallbacks
+		// try fallbacks
 		if !primaryOnly {
 			cs.fbeMutex.RLock()
 			fallbacks := cs.fallbackEndpoints
@@ -118,6 +120,7 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 				if fb == endpointToExclude {
 					break
 				}
+				tryCount++
 				cs.logger.Debug("Probing fallback core connection", "address", fb.toURI())
 				err = fb.tryDial(ctx)
 				if err == nil {
@@ -128,7 +131,12 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 			}
 		}
 
-		// 4. increment backoff
+		// check for no available endpoints
+		if tryCount == 0 {
+			return fmt.Errorf("no core endpoints available")
+		}
+
+		// increment backoff
 		if backoff < maxBackoff {
 			backoff = min(max(backoff, 1*time.Second)*2, maxBackoff)
 		} else if !probeInfinitely {
