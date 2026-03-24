@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -44,6 +45,8 @@ func (dispatcher *dispatcher) run(parentCtx context.Context, workerExitCh chan<-
 	childContext, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
+	dispatcher.logger.Info("Starting dispatcher")
+
 	var (
 		err       error
 		connEpoch uint32
@@ -64,12 +67,12 @@ func (dispatcher *dispatcher) run(parentCtx context.Context, workerExitCh chan<-
 
 	go func() {
 		dispatcher.logger.Info("Starting receive loop")
-		errCh <- recvLoop(childContext, dispatcher.conn, dispatcher.fromCore)
+		errCh <- recvLoop(childContext, dispatcher.conn, dispatcher.fromCore, dispatcher.logger)
 	}()
 
 	go func() {
 		dispatcher.logger.Info("Starting send loop")
-		errCh <- sendLoop(childContext, dispatcher.conn, dispatcher.toCore)
+		errCh <- sendLoop(childContext, dispatcher.conn, dispatcher.toCore, dispatcher.logger)
 	}()
 
 	err = <-errCh // Get error from first loop
@@ -80,12 +83,12 @@ func (dispatcher *dispatcher) run(parentCtx context.Context, workerExitCh chan<-
 	workerExit := newWorkerExit(dispatcher, err)
 	workerExitCh <- workerExit
 
-	dispatcher.logger.Error("dispatcher exit", "kind", workerExit.kind.String(), "err", workerExit.err)
+	dispatcher.logger.Info("dispatcher exit", "kind", workerExit.kind.String(), "err", workerExit.err)
 
 	return err
 }
 
-func sendLoop(ctx context.Context, conn net.Conn, toCore <-chan control.ControlMessage) error {
+func sendLoop(ctx context.Context, conn net.Conn, toCore <-chan control.ControlMessage, logger *slog.Logger) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -94,6 +97,7 @@ func sendLoop(ctx context.Context, conn net.Conn, toCore <-chan control.ControlM
 			if !ok {
 				return nil // channel closed
 			}
+			logger.Debug("Send message to core", "message", fmt.Sprintf("%+v", msg))
 			if err := send(conn, msg, 3*time.Second); err != nil {
 				return err
 			}
@@ -125,12 +129,13 @@ func send(conn net.Conn, msg control.ControlMessage, timeout time.Duration) erro
 	return nil
 }
 
-func recvLoop(ctx context.Context, conn net.Conn, fromCore chan<- control.ControlMessage) error {
+func recvLoop(ctx context.Context, conn net.Conn, fromCore chan<- control.ControlMessage, logger *slog.Logger) error {
 	for {
 		msg, err := receive(conn)
 		if err != nil {
 			return err
 		}
+		logger.Debug("Received message from core", "message", fmt.Sprintf("%+v", msg))
 		select {
 		case <-ctx.Done():
 			return nil
