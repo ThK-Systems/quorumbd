@@ -28,4 +28,6 @@ profile.cov
 
 # Local stuff
 local-docs
+
+# VSCodeCounter
 .VSCodeCounter
