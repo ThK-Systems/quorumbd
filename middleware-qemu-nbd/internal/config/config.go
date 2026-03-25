@@ -86,7 +86,7 @@ func (cfg *Config) setDefaults() {
 }
 
 func (cfg *nbdServerConfig) setDefaults() {
-	cfg.Socket = filepath.Join("/", "var", "run", "quorumbd", "main.sock")
+	cfg.Socket = filepath.Join("/", "var", "run", "qbd", "nbdserver.sock")
 }
 
 func (cfg *Config) validate() error {
