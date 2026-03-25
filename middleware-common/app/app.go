@@ -65,7 +65,7 @@ func (app *App) Run() error {
 	)
 	defer stop()
 
-	if err := app.coreSupervisor.Try(ctx, 0, 30*time.Second, false); err != nil {
+	if err := app.coreSupervisor.Try(ctx, 0, 30*time.Second, false); err != nil { // TOCONFIG
 		return err
 	}
 
@@ -84,13 +84,12 @@ func (app *App) Run() error {
 		return app.dispatcher.run(ctx, workerExitChannel)
 	})
 
-	// TODO (in go routine):
+	// TODO:
 	// - Ask for disklist from core
 	// - Ask for nodes from core
 
 	// TODO: Do Listen here in go routine and start disk worker associated to errgroup
 	// Do only listen, if server, otherwise connect proactively
-	// Do only listen, if there is a disklist
 	// Do not listen or connect proactively, if there is no core connection
 
 outer:

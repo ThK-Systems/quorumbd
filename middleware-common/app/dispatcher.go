@@ -50,7 +50,7 @@ func (dispatcher *dispatcher) getCoreConnectionEpoch() uint32 {
 func (dispatcher *dispatcher) SendMessageToCore(msg control.ControlMessage) error {
 	select {
 	case dispatcher.toCore <- msg:
-	case <-time.After(1 * time.Second):
+	case <-time.After(1 * time.Second): // TOCONFIG
 		return fmt.Errorf("send timeout of message to core: %+v", msg)
 	}
 	return nil
@@ -136,7 +136,7 @@ func (dispatcher *dispatcher) sendLoop(ctx context.Context) error {
 				return nil // channel closed
 			}
 			dispatcher.logger.Debug("Send control message to core", "message", fmt.Sprintf("%+v", msg))
-			if err := dispatcher.send(msg, 3*time.Second); err != nil {
+			if err := dispatcher.send(msg, 3*time.Second); err != nil { // TOCONFIG
 				if ctx.Err() != nil {
 					dispatcher.logger.Info("Stopping send loop because context done")
 					return nil
