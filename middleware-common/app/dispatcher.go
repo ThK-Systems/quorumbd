@@ -51,7 +51,7 @@ func (dispatcher *dispatcher) SendMessageToCore(msg control.ControlMessage) erro
 	select {
 	case dispatcher.toCore <- msg:
 	case <-time.After(1 * time.Second):
-		return fmt.Errorf("send timeout of message to core: +%v", msg)
+		return fmt.Errorf("send timeout of message to core: %+v", msg)
 	}
 	return nil
 }
@@ -60,8 +60,9 @@ func (dispatcher *dispatcher) RegisterForCoreMessage(messageType uint32, message
 	dispatcher.registryMu.Lock()
 	defer dispatcher.registryMu.Unlock()
 	if dispatcher.registry[messageType] != nil {
-		return fmt.Errorf("message type %d already registered", messageType)
+		return fmt.Errorf("message type %d is already registered to %+v", messageType, dispatcher.registry[messageType])
 	}
+	dispatcher.logger.Debug("Registering handler for message type", "type", messageType, "handler", fmt.Sprintf("%+v", messageHandler))
 	dispatcher.registry[messageType] = messageHandler
 	return nil
 }
