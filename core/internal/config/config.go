@@ -15,7 +15,7 @@ import (
 	commonconfig "quorumbd.net/common/config"
 )
 
-const configFileName = "middleware-qemu-nbd.toml"
+const configFileName = "core.toml"
 
 var (
 	config  *Config
@@ -26,7 +26,7 @@ var (
 type Config struct {
 	CommonConfig  commonconfig.CommonConfig  `toml:"common"`
 	LoggingConfig commonconfig.LoggingConfig `toml:"logging"`
-	coreConfig    coreConfig                 `toml:"core"`
+	CoreConfig    coreConfig                 `toml:"core"`
 }
 
 type coreConfig struct {
@@ -66,7 +66,7 @@ func load() (*Config, error) {
 func (cfg *Config) setDefaults() {
 	cfg.CommonConfig.SetDefaults()
 	cfg.LoggingConfig.SetDefaults()
-	cfg.coreConfig.setDefaults()
+	cfg.CoreConfig.setDefaults()
 }
 
 func (cfg *coreConfig) setDefaults() {
@@ -76,7 +76,7 @@ func (cfg *coreConfig) setDefaults() {
 func (cfg *Config) validate() error {
 	commonErrors := cfg.CommonConfig.Validate()
 	loggingErrors := cfg.LoggingConfig.Validate()
-	coreErrors := cfg.coreConfig.validate()
+	coreErrors := cfg.CoreConfig.validate()
 	return commonconfig.MergeValidationErrors(commonErrors, loggingErrors, coreErrors)
 }
 
