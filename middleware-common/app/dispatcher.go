@@ -87,7 +87,6 @@ func (dispatcher *dispatcher) run(parentCtx context.Context, workerExitCh chan<-
 
 	go func() {
 		<-childContext.Done()
-		dispatcher.logger.Info("Closing connection because context done")
 		dispatcher.conn.Close()
 	}()
 
