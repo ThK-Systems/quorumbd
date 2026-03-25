@@ -58,7 +58,7 @@ func Load() error {
 func load() error {
 	configPath, err := commonconfig.ResolveConfigPath(configFileName, "QUORUMBD_NBDSERVER_CONFIG")
 	if err != nil {
-		return fmt.Errorf("loading config: %w", err)
+		return fmt.Errorf("error loading config: %w", err)
 	}
 
 	var cfg Config
@@ -66,11 +66,11 @@ func load() error {
 	cfg.setDefaults()
 
 	if err := cfg.readConfig(configPath); err != nil {
-		return fmt.Errorf("parsing config %s: %w", configPath, err)
+		return fmt.Errorf("error parsing config %s: %w", configPath, err)
 	}
 
 	if err := cfg.validate(); err != nil {
-		return fmt.Errorf("invalid config %s: %w", configPath, err)
+		return fmt.Errorf("error invalid config %s: %w", configPath, err)
 	}
 
 	config = &cfg
