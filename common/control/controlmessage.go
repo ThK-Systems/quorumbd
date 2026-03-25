@@ -1,4 +1,4 @@
-// Package control provides messages for the control plane
+// Package control provides messages and structures and handlers and common logic for the control plane
 package control
 
 import (
