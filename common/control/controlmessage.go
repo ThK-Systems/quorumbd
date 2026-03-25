@@ -10,6 +10,7 @@ const (
 type ControlMessage interface {
 	Type() uint32
 	RequestID() uint64
+	isResponse() bool
 }
 
 func NewMessage(messageType uint32) (ControlMessage, error) {
