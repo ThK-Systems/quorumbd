@@ -20,6 +20,11 @@ const (
 	maxFrameSize = 1 << 20 // 1MB
 )
 
+var dispatcherSingleton struct {
+	mu          sync.Mutex
+	initialized bool
+}
+
 type dispatcher struct {
 	app        *App
 	logger     *slog.Logger
@@ -31,6 +36,15 @@ type dispatcher struct {
 }
 
 func newDispatcher(app *App) *dispatcher {
+	dispatcherSingleton.mu.Lock()
+	defer dispatcherSingleton.mu.Unlock()
+
+	if dispatcherSingleton.initialized {
+		panic("dispatcher singleton already instantiated")
+	}
+
+	dispatcherSingleton.initialized = true
+
 	return &dispatcher{
 		app:      app,
 		logger:   app.logger.With("module", "dispatcher"),

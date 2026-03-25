@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -19,6 +20,10 @@ import (
 
 var (
 	Config config.Config
+	appSingleton struct {
+		mu           sync.Mutex
+		initialized  bool
+	}
 )
 
 type App struct {
@@ -31,12 +36,15 @@ type App struct {
 }
 
 func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, error) {
+	claimAppSingleton()
+
 	if logger == nil {
 		logger = slog.Default()
 	}
 
 	cs, err := coreconnection.New(&config.CoreConnectionConfig, logger)
 	if err != nil {
+		releaseAppSingleton()
 		return nil, err
 	}
 
@@ -53,6 +61,23 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 
 	newApp.logger = newApp.logger.With("impl", newApp.adaptor.GetImplementationName())
 	return &newApp, nil
+}
+
+func claimAppSingleton() {
+	appSingleton.mu.Lock()
+	defer appSingleton.mu.Unlock()
+
+	if appSingleton.initialized {
+		panic("app singleton already instantiated")
+	}
+
+	appSingleton.initialized = true
+}
+
+func releaseAppSingleton() {
+	appSingleton.mu.Lock()
+	defer appSingleton.mu.Unlock()
+	appSingleton.initialized = false
 }
 
 func (app *App) Run() error {
