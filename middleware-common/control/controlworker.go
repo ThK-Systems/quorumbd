@@ -95,8 +95,12 @@ func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- work
 	}()
 
 	err = <-errCh // Get error from first loop
+	shutdownRequested := parentCtx.Err() != nil
 	cancel()
-	if err != nil {
+	if shutdownRequested && err != nil {
+		cw.logger.Info("Closing connection because context done")
+		err = nil
+	} else if err != nil {
 		cw.logger.Error("Closing connection", "error", err)
 	} else {
 		cw.logger.Info("Closing connection because context done")
