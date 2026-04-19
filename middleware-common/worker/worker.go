@@ -31,11 +31,11 @@ func NewWorkerExit(worker Worker, err error) WorkerExit {
 	}
 }
 
-func (we WorkerExit) GetKind() errorhelper.ExitKind {
+func (we WorkerExit) Kind() errorhelper.ExitKind {
 	return we.kind
 }
 
-func (we WorkerExit) GetError() error {
+func (we WorkerExit) Error() error {
 	return we.err
 }
 

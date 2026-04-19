@@ -130,9 +130,9 @@ outer:
 		case <-ctx.Done():
 			break outer
 		case workerExitResult = <-workerExitChannel:
-			switch workerExitResult.GetKind() {
+			switch workerExitResult.Kind() {
 			case errorhelper.ExitFatal:
-				runError = workerExitResult.GetError()
+				runError = workerExitResult.Error()
 				stop()
 				break outer
 			case errorhelper.ExitShutdown:
@@ -144,7 +144,7 @@ outer:
 
 	wg.Wait() // Wait for all go routines to finish
 
-	err := workerExitResult.GetError()
+	err := workerExitResult.Error()
 
 	if runError != nil {
 		err = runError // Fatal error (first error) overrides other errors
