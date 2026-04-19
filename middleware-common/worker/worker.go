@@ -40,9 +40,9 @@ func (we WorkerExit) GetError() error {
 }
 
 func (we WorkerExit) String() string {
-	result := "WorkerExit{worker: " + we.worker.String() + ", kind: " + we.kind.String()
+	result := "WorkerExit(worker: " + we.worker.String() + ", kind: " + we.kind.String()
 	if we.err != nil {
 		result += ", err: " + we.err.Error()
 	}
-	return result + "}"
+	return result + ")"
 }
