@@ -16,8 +16,8 @@ import (
 	commoncontrol "quorumbd.net/common/control"
 	commonio "quorumbd.net/common/io"
 
-	"quorumbd.net/middleware-common/worker"
 	"quorumbd.net/middleware-common/coreconnection"
+	"quorumbd.net/middleware-common/worker"
 )
 
 const (
@@ -58,7 +58,7 @@ func (cw *ControlWorker) RestartOnCoreReconnect() bool {
 	return true
 }
 
-func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- worker.WorkerExit, middlewareUUID uuid.UUID, coreEndpoint coreconnection.CoreEndpoint) error {
+func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- worker.WorkerExit, middlewareUUID uuid.UUID, coreEndpoint coreconnection.CoreEndpoint) {
 	childContext, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
@@ -66,7 +66,8 @@ func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- work
 
 	conn, err := coreEndpoint.Dial(childContext)
 	if err != nil {
-		return err
+		cw.exit(err, workerExitCh)
+		return
 	}
 	defer conn.Close()
 	cw.logger.Info("Connected", "address", conn.RemoteAddr().String())
@@ -77,7 +78,8 @@ func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- work
 	}()
 
 	if err := commonio.WriteFull(conn, append([]byte("CTRL"), middlewareUUID[:]...)); err != nil {
-		return err
+		cw.exit(err, workerExitCh)
+		return
 	}
 
 	errCh := make(chan error, 2)
@@ -102,12 +104,13 @@ func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- work
 	conn.Close()
 	<-errCh // Waiting for second loop (ignoring error) in cause of `cancel()`
 
+	cw.exit(err, workerExitCh)
+}
+
+func (cw *ControlWorker) exit(err error, workerExitCh chan<- worker.WorkerExit) {
 	workerExit := worker.NewWorkerExit(cw, err)
 	workerExitCh <- workerExit
-
 	cw.logger.Info("Dispatcher exit: " + workerExit.String())
-
-	return err
 }
 
 func (cw *ControlWorker) sendLoop(ctx context.Context, conn net.Conn) error {

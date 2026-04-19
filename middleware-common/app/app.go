@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/sync/errgroup"
 
 	"quorumbd.net/common/helper/errorhelper"
 	"quorumbd.net/middleware-common/config"
@@ -106,13 +105,13 @@ func (app *App) Run() error {
 	}
 
 	var (
-		errgrp            errgroup.Group
+		wg                sync.WaitGroup
 		workerExitChannel = make(chan worker.WorkerExit, 32)
 		runError          error
 	)
 
-	errgrp.Go(func() error {
-		return app.controlWorker.Run(ctx, workerExitChannel, app.uuid, *app.coreSupervisor.GetCurrentEndpoint())
+	wg.Go(func() {
+		app.controlWorker.Run(ctx, workerExitChannel, app.uuid, *app.coreSupervisor.GetCurrentEndpoint())
 	})
 
 	// TODO:
@@ -123,12 +122,14 @@ func (app *App) Run() error {
 	// Do only listen, if server, otherwise connect proactively
 	// Do not listen or connect proactively, if there is no core connection
 
+var workerExitResult worker.WorkerExit
+
 outer:
 	for {
 		select {
 		case <-ctx.Done():
 			break outer
-		case workerExitResult := <-workerExitChannel:
+		case workerExitResult = <-workerExitChannel:
 			switch workerExitResult.GetKind() {
 			case errorhelper.ExitFatal:
 				runError = workerExitResult.GetError()
@@ -141,7 +142,9 @@ outer:
 		}
 	}
 
-	err := errgrp.Wait() // Wait for all go routines to finish
+	wg.Wait() // Wait for all go routines to finish
+
+	err := workerExitResult.GetError()
 
 	if runError != nil {
 		err = runError // Fatal error (first error) overrides other errors

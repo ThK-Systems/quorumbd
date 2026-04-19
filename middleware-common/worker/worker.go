@@ -12,7 +12,7 @@ import (
 )
 
 type Worker interface {
-	Run(parentCtx context.Context, workerExitCh chan<- WorkerExit, middlewareUUID uuid.UUID, coreEndpoint coreconnection.CoreEndpoint) error
+	Run(parentCtx context.Context, workerExitCh chan<- WorkerExit, middlewareUUID uuid.UUID, coreEndpoint coreconnection.CoreEndpoint)
 	RestartOnCoreReconnect() bool
 	String() string
 }
