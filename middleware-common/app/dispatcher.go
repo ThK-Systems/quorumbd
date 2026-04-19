@@ -209,7 +209,7 @@ func (dispatcher *dispatcher) recvLoop(ctx context.Context) error {
 			continue
 		}
 
-		handler.HandleMessage(ctx, msg)
+		handler.HandleMessageBlocking(ctx, msg)
 	}
 }
 
