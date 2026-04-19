@@ -59,3 +59,14 @@ func (dispatcher *Dispatcher) RegisterForCoreMessage(messageType uint32, message
 	dispatcher.registry[messageType] = messageHandler
 	return nil
 }
+
+func (dispatcher *Dispatcher) UnregisterForCoreMessage(messageType uint32) error {
+	dispatcher.registryMu.Lock()
+	defer dispatcher.registryMu.Unlock()
+	if dispatcher.registry[messageType] == nil {
+		return fmt.Errorf("message type %d is not registered", messageType)
+	}
+	dispatcher.logger.Debug("Unregistering handler for message type", "type", messageType)
+	delete(dispatcher.registry, messageType)
+	return nil
+}
