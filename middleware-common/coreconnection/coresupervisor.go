@@ -109,7 +109,7 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 			cs.fbeMutex.RUnlock()
 			for _, fb := range fallbacks {
 				if fb == endpointToExclude {
-					break
+					continue
 				}
 				tryCount++
 				cs.logger.Debug("Probing fallback core connection", "address", fb.toURI())
