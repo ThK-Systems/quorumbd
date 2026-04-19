@@ -114,7 +114,7 @@ func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- work
 func (cw *ControlWorker) exit(err error, workerExitCh chan<- worker.WorkerExit) {
 	workerExit := worker.NewWorkerExit(cw, err)
 	workerExitCh <- workerExit
-	cw.logger.Info("Dispatcher exit: " + workerExit.String())
+	cw.logger.Info("Control worker exit: " + workerExit.String())
 }
 
 func (cw *ControlWorker) sendLoop(ctx context.Context, conn net.Conn) error {
