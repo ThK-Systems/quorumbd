@@ -22,7 +22,7 @@ var (
 	dispatcherOnce     sync.Once
 )
 
-func InitDispatcher(parentLogger *slog.Logger) *Dispatcher {
+func NewDispatcher(parentLogger *slog.Logger) *Dispatcher {
 	dispatcherOnce.Do(func() {
 		dispatcherInstance = &Dispatcher{
 			logger:   parentLogger.With("module", "dispatcher"),
@@ -69,4 +69,11 @@ func (dispatcher *Dispatcher) UnregisterForCoreMessage(messageType uint32) error
 	dispatcher.logger.Debug("Unregistering handler for message type", "type", messageType)
 	delete(dispatcher.registry, messageType)
 	return nil
+}
+
+func (dispatcher *Dispatcher) getHandlerForMessageType(messageType uint32) commoncontrol.MessageHandler {
+	dispatcher.registryMu.RLock()
+	handler := dispatcher.registry[messageType]
+	dispatcher.registryMu.RUnlock()
+	return handler
 }

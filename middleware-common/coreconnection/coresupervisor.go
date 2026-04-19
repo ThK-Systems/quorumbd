@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -60,14 +59,6 @@ func (cs *CoreSupervisor) IsConnected() bool {
 
 func (cs *CoreSupervisor) IsPrimary() bool {
 	return cs.IsConnected() && cs.currentEndpoint.Load() == cs.primaryEndpoint
-}
-
-func (cs *CoreSupervisor) Dial(ctx context.Context) (net.Conn, uint32, error) {
-	conn, err := cs.GetCurrentEndpoint().dial(ctx)
-	if err != nil {
-		return nil, 0, err
-	}
-	return conn, cs.connectionEpoch.Load(), nil
 }
 
 func (cs *CoreSupervisor) Try(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool) error {

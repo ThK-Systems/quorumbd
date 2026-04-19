@@ -15,14 +15,16 @@ import (
 
 	"quorumbd.net/common/helper/errorhelper"
 	"quorumbd.net/middleware-common/config"
+	"quorumbd.net/middleware-common/control"
 	"quorumbd.net/middleware-common/coreconnection"
+	"quorumbd.net/middleware-common/worker"
 )
 
 var (
-	Config config.Config
+	Config       config.Config
 	appSingleton struct {
-		mu           sync.Mutex
-		initialized  bool
+		mu          sync.Mutex
+		initialized bool
 	}
 )
 
@@ -32,7 +34,8 @@ type App struct {
 	config         *config.Config
 	coreSupervisor *coreconnection.CoreSupervisor
 	adaptor        Adaptor
-	dispatcher     *dispatcher
+	dispatcher     *control.Dispatcher
+	controlWorker  *control.ControlWorker
 }
 
 func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, error) {
@@ -56,8 +59,11 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 		adaptor:        adaptor,
 	}
 
-	dispatcher := newDispatcher(&newApp)
+	dispatcher := control.NewDispatcher(logger)
 	newApp.dispatcher = dispatcher
+
+	controlWorker := control.NewControlWorker(logger, dispatcher)
+	newApp.controlWorker = controlWorker
 
 	newApp.logger = newApp.logger.With("impl", newApp.adaptor.GetImplementationName())
 	return &newApp, nil
@@ -100,13 +106,13 @@ func (app *App) Run() error {
 	}
 
 	var (
-		g                 errgroup.Group
-		workerExitChannel = make(chan WorkerExit, 32)
+		errgrp            errgroup.Group
+		workerExitChannel = make(chan worker.WorkerExit, 32)
 		runError          error
 	)
 
-	g.Go(func() error {
-		return app.dispatcher.run(ctx, workerExitChannel)
+	errgrp.Go(func() error {
+		return app.controlWorker.Run(ctx, workerExitChannel, app.uuid, *app.coreSupervisor.GetCurrentEndpoint())
 	})
 
 	// TODO:
@@ -123,22 +129,19 @@ outer:
 		case <-ctx.Done():
 			break outer
 		case workerExitResult := <-workerExitChannel:
-			switch workerExitResult.kind {
+			switch workerExitResult.GetKind() {
 			case errorhelper.ExitFatal:
-				runError = workerExitResult.err
+				runError = workerExitResult.GetError()
 				stop()
 				break outer
 			case errorhelper.ExitShutdown:
 				stop()
 				break outer
-			case errorhelper.ExitReconnect:
-				reconnectToCore(ctx, workerExitResult, workerExitChannel)
 			}
 		}
-
 	}
 
-	err := g.Wait() // Wait for all go routines to finish
+	err := errgrp.Wait() // Wait for all go routines to finish
 
 	if runError != nil {
 		err = runError // Fatal error (first error) overrides other errors
@@ -153,7 +156,7 @@ outer:
 	return err
 }
 
-func reconnectToCore(ctx context.Context, workerExitResult WorkerExit, workerExitChannel chan<- WorkerExit) {
+func reconnectToCore(ctx context.Context, workerExitResult worker.WorkerExit, workerExitChannel chan<- worker.WorkerExit) {
 	// TODO Implement
 	panic("unimplemented")
 }

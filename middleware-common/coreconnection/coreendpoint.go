@@ -46,7 +46,7 @@ func (ce *CoreEndpoint) toURI() string {
 }
 
 func (ce *CoreEndpoint) tryDial(ctx context.Context) error {
-	conn, err := ce.dial(ctx)
+	conn, err := ce.Dial(ctx)
 	if err != nil {
 		return err
 	}
@@ -54,9 +54,9 @@ func (ce *CoreEndpoint) tryDial(ctx context.Context) error {
 	return nil
 }
 
-func (ce *CoreEndpoint) dial(ctx context.Context) (net.Conn, error) {
+func (ce *CoreEndpoint) Dial(ctx context.Context) (net.Conn, error) {
 	dialer := net.Dialer{
-		Timeout: 5 * time.Second,
+		Timeout: 5 * time.Second, // TOCONFIG
 	}
 	conn, err := dialer.DialContext(ctx, string(ce.protocol), ce.address)
 	if err != nil {
