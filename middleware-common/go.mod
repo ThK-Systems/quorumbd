@@ -8,4 +8,9 @@ require (
 	quorumbd.net/common v0.0.0-00010101000000-000000000000
 )
 
+require (
+	go.etcd.io/bbolt v1.4.3 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+)
+
 replace quorumbd.net/common => ../common

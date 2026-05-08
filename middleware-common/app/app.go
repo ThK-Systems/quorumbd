@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"quorumbd.net/common/helper/errorhelper"
+	"quorumbd.net/common/state"
 	"quorumbd.net/middleware-common/config"
 	"quorumbd.net/middleware-common/control"
 	"quorumbd.net/middleware-common/coreconnection"
@@ -30,6 +31,7 @@ var (
 type App struct {
 	uuid           uuid.UUID
 	logger         *slog.Logger
+	state          *state.State
 	config         *config.Config
 	coreSupervisor *coreconnection.CoreSupervisor
 	adaptor        Adaptor
@@ -39,6 +41,11 @@ type App struct {
 
 func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, error) {
 	claimAppSingleton()
+
+	if err := state.Initialize(config.CommonConfig.StateDir, adaptor.GetImplementationName()); err != nil {
+		releaseAppSingleton()
+		return nil, err
+	}
 
 	if logger == nil {
 		logger = slog.Default()
@@ -50,9 +57,17 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 		return nil, err
 	}
 
+	middlewareState := state.Get()
+	uuid, err := state.GetOrCreateUUID(middlewareState)
+	if err != nil {
+		releaseAppSingleton()
+		return nil, err
+	}
+
 	newApp := App{
-		uuid:           uuid.New(),
+		uuid:           uuid,
 		logger:         logger,
+		state:          middlewareState,
 		config:         config,
 		coreSupervisor: cs,
 		adaptor:        adaptor,
@@ -122,7 +137,7 @@ func (app *App) Run() error {
 	// Do only listen, if server, otherwise connect proactively
 	// Do not listen or connect proactively, if there is no core connection
 
-var workerExitResult worker.WorkerExit
+	var workerExitResult worker.WorkerExit
 
 outer:
 	for {
