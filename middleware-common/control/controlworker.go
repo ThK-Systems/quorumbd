@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	commoncontrol "quorumbd.net/common/control"
+	"quorumbd.net/common/handshake"
 	commonio "quorumbd.net/common/io"
 
 	"quorumbd.net/middleware-common/coreconnection"
@@ -77,7 +78,7 @@ func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- work
 		conn.Close()
 	}()
 
-	if err := commonio.WriteFull(conn, append([]byte("CTRL"), middlewareUUID[:]...)); err != nil {
+	if err := commonio.WriteFull(conn, handshake.New(handshake.TypeControl, middlewareUUID)); err != nil {
 		cw.exit(err, workerExitCh)
 		return
 	}

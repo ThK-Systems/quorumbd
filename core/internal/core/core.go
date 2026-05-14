@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"quorumbd.net/common/handshake"
 	"quorumbd.net/common/logging"
 	"quorumbd.net/common/state"
 	"quorumbd.net/core/internal/config"
@@ -142,6 +143,28 @@ func (c *Core) handleConnection(conn net.Conn) {
 	}()
 
 	c.logger.Info("Core accepted connection", "remote", remote)
+
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		c.logger.Warn("Core connection read failed", "remote", remote, "error", err)
+		return
+	}
+
+	hs, err := handshake.Parse(buf[:n])
+	if err != nil {
+		c.logger.Info("Core connection received", "remote", remote, "data", string(buf[:n]))
+		return
+	}
+
+	c.logger.Info(
+		"Core handshake received",
+		"remote", remote,
+		"magic", fmt.Sprintf("0x%04x", hs.Magic),
+		"version", hs.Version,
+		"type", hs.Type,
+		"uuid", hs.UUID.String(),
+	)
 }
 
 func parseListenURI(uri string) (string, string, error) {

@@ -111,7 +111,7 @@ func (app *App) Run() error {
 	)
 	defer stop()
 
-	if err := app.coreSupervisor.Try(ctx, 0, 30*time.Second, false); err != nil { // TOCONFIG
+	if err := app.coreSupervisor.Try(ctx, 0, 30*time.Second, false, app.uuid); err != nil { // TOCONFIG
 		return err
 	}
 

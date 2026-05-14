@@ -6,6 +6,11 @@ import (
 	"net"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+
+	"quorumbd.net/common/handshake"
+	commonio "quorumbd.net/common/io"
 )
 
 type Protocol string
@@ -45,13 +50,14 @@ func (ce *CoreEndpoint) toURI() string {
 	return string(ce.protocol) + "://" + ce.address
 }
 
-func (ce *CoreEndpoint) tryDial(ctx context.Context) error {
+func (ce *CoreEndpoint) tryDial(ctx context.Context, middlewareUUID uuid.UUID) error {
 	conn, err := ce.Dial(ctx)
 	if err != nil {
 		return err
 	}
-	conn.Close()
-	return nil
+	defer conn.Close()
+
+	return commonio.WriteFull(conn, handshake.New(handshake.TypeProbe, middlewareUUID))
 }
 
 func (ce *CoreEndpoint) Dial(ctx context.Context) (net.Conn, error) {

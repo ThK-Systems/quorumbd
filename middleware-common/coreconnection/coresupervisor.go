@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
+
 	"quorumbd.net/middleware-common/config"
 )
 
@@ -61,15 +63,15 @@ func (cs *CoreSupervisor) IsPrimary() bool {
 	return cs.IsConnected() && cs.currentEndpoint.Load() == cs.primaryEndpoint
 }
 
-func (cs *CoreSupervisor) Try(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool) error {
-	return cs.Retry(ctx, initialBackoff, maxBackoff, probeInfinitely, false, nil)
+func (cs *CoreSupervisor) Try(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool, middlewareUUID uuid.UUID) error {
+	return cs.Retry(ctx, initialBackoff, maxBackoff, probeInfinitely, false, nil, middlewareUUID)
 }
 
-func (cs *CoreSupervisor) RetryPrimary(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration) error {
-	return cs.Retry(ctx, initialBackoff, maxBackoff, true, true, nil)
+func (cs *CoreSupervisor) RetryPrimary(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, middlewareUUID uuid.UUID) error {
+	return cs.Retry(ctx, initialBackoff, maxBackoff, true, true, nil, middlewareUUID)
 }
 
-func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool, primaryOnly bool, endpointToExclude *CoreEndpoint) error {
+func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duration, maxBackoff time.Duration, probeInfinitely bool, primaryOnly bool, endpointToExclude *CoreEndpoint, middlewareUUID uuid.UUID) error {
 
 	exclude := "none"
 	if endpointToExclude != nil {
@@ -94,7 +96,7 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 		if endpointToExclude != cs.primaryEndpoint {
 			tryCount++
 			cs.logger.Debug("Probing primary core endpoint", "address", cs.primaryEndpoint.toURI())
-			err = cs.primaryEndpoint.tryDial(ctx)
+			err = cs.primaryEndpoint.tryDial(ctx, middlewareUUID)
 			if err == nil {
 				cs.logger.Info("Primary core endpoint is reachable", "address", cs.primaryEndpoint.toURI())
 				cs.setNewCurrentEndpoint(cs.primaryEndpoint)
@@ -113,7 +115,7 @@ func (cs *CoreSupervisor) Retry(ctx context.Context, initialBackoff time.Duratio
 				}
 				tryCount++
 				cs.logger.Debug("Probing fallback core connection", "address", fb.toURI())
-				err = fb.tryDial(ctx)
+				err = fb.tryDial(ctx, middlewareUUID)
 				if err == nil {
 					cs.logger.Info("Fallback core endpoint is reachable", "address", fb.toURI())
 					cs.setNewCurrentEndpoint(fb)
