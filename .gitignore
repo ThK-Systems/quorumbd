@@ -32,3 +32,6 @@ local-docs
 # VSCodeCounter
 .VSCodeCounter
 .codex
+
+# Fake Core
+fake-core
