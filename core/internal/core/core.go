@@ -4,6 +4,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"os"
@@ -113,7 +114,7 @@ func (c *Core) Run() error {
 				connectionWG.Add(1)
 				go func(conn net.Conn) {
 					defer connectionWG.Done()
-					c.handleConnection(conn)
+					c.handleConnection(ctx, conn)
 				}(conn)
 			}
 		}(listener)
@@ -134,7 +135,7 @@ func (c *Core) Run() error {
 	return nil
 }
 
-func (c *Core) handleConnection(conn net.Conn) {
+func (c *Core) handleConnection(ctx context.Context, conn net.Conn) {
 	remote := conn.RemoteAddr().String()
 
 	defer func() {
@@ -142,18 +143,23 @@ func (c *Core) handleConnection(conn net.Conn) {
 		c.logger.Info("Core connection closed", "remote", remote)
 	}()
 
+	go func() {
+		<-ctx.Done()
+		_ = conn.Close()
+	}()
+
 	c.logger.Info("Core accepted connection", "remote", remote)
 
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
+	buf := make([]byte, handshake.Size)
+	_, err := io.ReadFull(conn, buf)
 	if err != nil {
 		c.logger.Warn("Core connection read failed", "remote", remote, "error", err)
 		return
 	}
 
-	hs, err := handshake.Parse(buf[:n])
+	hs, err := handshake.Parse(buf)
 	if err != nil {
-		c.logger.Info("Core connection received", "remote", remote, "data", string(buf[:n]))
+		c.logger.Info("Core connection received", "remote", remote, "data", string(buf))
 		return
 	}
 
