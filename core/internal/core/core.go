@@ -114,7 +114,10 @@ func (c *Core) Run() error {
 				connectionWG.Add(1)
 				go func(conn net.Conn) {
 					defer connectionWG.Done()
-					c.handleConnection(ctx, conn)
+					remote := conn.RemoteAddr().String()
+					if err := c.handleConnection(ctx, conn); err != nil {
+						c.logger.Warn("Core connection failed", "remote", remote, "error", err)
+					}
 				}(conn)
 			}
 		}(listener)
@@ -135,7 +138,7 @@ func (c *Core) Run() error {
 	return nil
 }
 
-func (c *Core) handleConnection(ctx context.Context, conn net.Conn) {
+func (c *Core) handleConnection(ctx context.Context, conn net.Conn) error {
 	remote := conn.RemoteAddr().String()
 
 	defer func() {
@@ -153,14 +156,13 @@ func (c *Core) handleConnection(ctx context.Context, conn net.Conn) {
 	buf := make([]byte, handshake.Size)
 	_, err := io.ReadFull(conn, buf)
 	if err != nil {
-		c.logger.Warn("Core connection read failed", "remote", remote, "error", err)
-		return
+		return fmt.Errorf("read handshake: %w", err)
 	}
 
 	hs, err := handshake.Parse(buf)
 	if err != nil {
 		c.logger.Info("Core connection received", "remote", remote, "data", string(buf))
-		return
+		return err
 	}
 
 	c.logger.Info(
@@ -171,6 +173,18 @@ func (c *Core) handleConnection(ctx context.Context, conn net.Conn) {
 		"type", hs.Type,
 		"uuid", hs.UUID.String(),
 	)
+
+	switch hs.Type {
+	case handshake.TypeProbe:
+		c.logger.Info("Core connection is just a probe")
+		return nil
+	case handshake.TypeControl:
+		c.logger.Info("Core connection is a control connection")
+		// TODO add control worker
+		return nil
+	default:
+		return fmt.Errorf("unknown handshake type %q", hs.Type)
+	}
 }
 
 func parseListenURI(uri string) (string, string, error) {
