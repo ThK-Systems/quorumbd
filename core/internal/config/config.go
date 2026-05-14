@@ -26,10 +26,10 @@ var (
 type Config struct {
 	CommonConfig  commonconfig.CommonConfig  `toml:"common"`
 	LoggingConfig commonconfig.LoggingConfig `toml:"logging"`
-	CoreConfig    coreConfig                 `toml:"core"`
+	CoreConfig    CoreConfig                 `toml:"core"`
 }
 
-type coreConfig struct {
+type CoreConfig struct {
 	Listen []string `toml:"listen"`
 }
 
@@ -69,7 +69,7 @@ func (cfg *Config) setDefaults() {
 	cfg.CoreConfig.setDefaults()
 }
 
-func (cfg *coreConfig) setDefaults() {
+func (cfg *CoreConfig) setDefaults() {
 	cfg.Listen = []string{"unix://" + filepath.Join("/", "var", "run", "qbd", "core.sock")}
 }
 
@@ -80,7 +80,7 @@ func (cfg *Config) validate() error {
 	return commonconfig.MergeValidationErrors(commonErrors, loggingErrors, coreErrors)
 }
 
-func (cfg coreConfig) validate() error {
+func (cfg CoreConfig) validate() error {
 	return validation.Errors{
 		"core": validation.ValidateStruct(&cfg,
 			validation.Field(&cfg.Listen,

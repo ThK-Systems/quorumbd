@@ -4,32 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	"quorumbd.net/core/internal/config"
+	"quorumbd.net/core/internal/core"
 )
 
-func mainNew() {
-	core, err := newCore()
+func main() {
+	c, err := core.New()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
-	core.run()
-}
-
-type core struct {
-	config *config.Config
-}
-
-func newCore() (*core, error) {
-	config, err := config.Load()
-	if err != nil {
-		return nil, err
+	if err := c.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
 	}
-	return &core{
-		config: config,
-	}, nil
-}
-
-func (c *core) run() {
-	panic("unimplemented")
 }

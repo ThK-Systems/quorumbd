@@ -147,13 +147,18 @@ outer:
 			break outer
 		case workerExitResult = <-workerExitChannel:
 			switch workerExitResult.Kind() {
-			case errorhelper.ExitFatal:
-				runError = workerExitResult.Error()
-				stop()
-				break outer
-			case errorhelper.ExitShutdown:
-				stop()
-				break outer
+				case errorhelper.ExitFatal:
+					runError = workerExitResult.Error()
+					stop()
+					break outer
+				case errorhelper.ExitReconnect:
+					// TODO: Implement reconnect. Until then, exit instead of running without workers.
+					runError = workerExitResult.Error()
+					stop()
+					break outer
+				case errorhelper.ExitShutdown:
+					stop()
+					break outer
 			}
 		}
 	}
