@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
@@ -48,6 +49,8 @@ func (cfg *CommonConfig) SetDefaults() {
 }
 
 func (cfg *LoggingConfig) Validate() error {
+	cfg.Level = strings.ToUpper(cfg.Level)
+
 	return validation.Errors{
 		"logging": validation.ValidateStruct(cfg,
 			validation.Field(&cfg.Type, validation.Required.Error("logging.type required"), validation.In(LoggingTypeStdout, LoggingTypeFile).Error("invalid logging.type")),
