@@ -41,11 +41,16 @@ func Parse(data []byte) (Handshake, error) {
 		return Handshake{}, fmt.Errorf("handshake too short: %d < %d", len(data), Size)
 	}
 
+	magic := binary.BigEndian.Uint16(data[0:2])
+	if magic != Magic {
+		return Handshake{}, fmt.Errorf("invalid handshake magic: 0x%04x", magic)
+	}
+
 	var reserved [8]byte
 	copy(reserved[:], data[24:32])
 
 	return Handshake{
-		Magic:    binary.BigEndian.Uint16(data[0:2]),
+		Magic:    magic,
 		Version:  binary.BigEndian.Uint16(data[2:4]),
 		Type:     string(data[4:8]),
 		UUID:     uuid.UUID(data[8:24]),
