@@ -2,6 +2,7 @@
 package state
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,7 +13,8 @@ import (
 const stateBucket = "state"
 
 type State struct {
-	db *bbolt.DB
+	db      *bbolt.DB
+	logger *slog.Logger
 }
 
 var (
@@ -20,7 +22,7 @@ var (
 	mu    sync.Mutex
 )
 
-func Initialize(stateDir, dbName string) error {
+func Initialize(stateDir, dbName string, parentLogger *slog.Logger) error {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -37,7 +39,9 @@ func Initialize(stateDir, dbName string) error {
 		return err
 	}
 
-	state = &State{db: db}
+	logger := parentLogger.With("module", "state")
+	logger.Debug("State database initialized", "path", filepath.Join(stateDir, dbName))
+	state = &State{db: db, logger: logger}
 	return nil
 }
 
@@ -47,18 +51,19 @@ func Get() *State {
 	return state
 }
 
-func (s *State) PutByValue(key string, value string) error {
+func (s *State) putByValue(key string, value string) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte(stateBucket))
 		if err != nil {
 			return err
 		}
 
+		s.logger.Debug("State value updated", "key", key, "value", value)
 		return b.Put([]byte(key), []byte(value))
 	})
 }
 
-func (s *State) PutIfAbsent(key string, value string) error {
+func (s *State) putIfAbsent(key string, value string) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte(stateBucket))
 		if err != nil {
@@ -69,11 +74,12 @@ func (s *State) PutIfAbsent(key string, value string) error {
 			return nil
 		}
 
+		s.logger.Debug("State value inserted", "key", key, "value", value)
 		return b.Put([]byte(key), []byte(value))
 	})
 }
 
-func (s *State) PutByFunc(key string, createValue func() (string, error)) error {
+func (s *State) putByFunc(key string, createValue func() (string, error)) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte(stateBucket))
 		if err != nil {
@@ -85,11 +91,12 @@ func (s *State) PutByFunc(key string, createValue func() (string, error)) error 
 			return err
 		}
 
+		s.logger.Debug("State value updated", "key", key, "value", value)
 		return b.Put([]byte(key), []byte(value))
 	})
 }
 
-func (s *State) Exists(key string) (bool, error) {
+func (s *State) exists(key string) (bool, error) {
 	var exists bool
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
@@ -108,7 +115,7 @@ func (s *State) Exists(key string) (bool, error) {
 	return exists, nil
 }
 
-func (s *State) GetValue(key string) (string, error) {
+func (s *State) getValue(key string) (string, error) {
 	var result string
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
@@ -130,7 +137,7 @@ func (s *State) GetValue(key string) (string, error) {
 	return result, nil
 }
 
-func (s *State) GetOrComputeValue(
+func (s *State) getOrComputeValue(
 	key string,
 	createValue func() (string, error),
 ) (string, error) {
@@ -138,7 +145,7 @@ func (s *State) GetOrComputeValue(
 
 	err := s.db.Update(func(tx *bbolt.Tx) error {
 		var err error
-		result, err = getOrComputeValue(tx, key, createValue)
+		result, err = getOrComputeValue(tx, key, createValue, s.logger)
 		return err
 	})
 	if err != nil {
@@ -152,6 +159,7 @@ func getOrComputeValue(
 	tx *bbolt.Tx,
 	key string,
 	createValue func() (string, error),
+	logging *slog.Logger,
 ) (string, error) {
 	b, err := tx.CreateBucketIfNotExists([]byte(stateBucket))
 	if err != nil {
@@ -173,5 +181,6 @@ func getOrComputeValue(
 		return "", err
 	}
 
+	logging.Debug("State value computed", "key", key, "value", v)
 	return v, nil
 }

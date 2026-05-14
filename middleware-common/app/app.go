@@ -42,13 +42,13 @@ type App struct {
 func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, error) {
 	claimAppSingleton()
 
-	if err := state.Initialize(config.CommonConfig.StateDir, adaptor.GetImplementationName()); err != nil {
-		releaseAppSingleton()
-		return nil, err
-	}
-
 	if logger == nil {
 		logger = slog.Default()
+	}
+
+	if err := state.Initialize(config.CommonConfig.StateDir, adaptor.GetImplementationName(), logger); err != nil {
+		releaseAppSingleton()
+		return nil, err
 	}
 
 	cs, err := coreconnection.New(&config.CoreConnectionConfig, logger)
@@ -63,6 +63,7 @@ func New(adaptor Adaptor, config *config.Config, logger *slog.Logger) (*App, err
 		releaseAppSingleton()
 		return nil, err
 	}
+	logger.Info("Middleware initialized with uuid", "uuid", uuid.String())
 
 	newApp := App{
 		uuid:           uuid,
