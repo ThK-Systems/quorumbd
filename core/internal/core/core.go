@@ -168,8 +168,9 @@ func (c *Core) handleConnection(ctx context.Context, conn net.Conn) error {
 	c.logger.Info(
 		"Core handshake received",
 		"remote", remote,
-		"magic", fmt.Sprintf("0x%04x", hs.Magic),
+		"magic", string(hs.Magic[:]),
 		"version", hs.Version,
+		"source", hs.Source,
 		"type", hs.Type,
 		"uuid", hs.UUID.String(),
 	)

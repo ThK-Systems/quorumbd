@@ -8,31 +8,38 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	Magic   uint16 = 0x5142
-	Version uint16 = 0x0001
-	Size           = 32
-)
+const Version uint16 = 0x0001
+
+const Size = 32
+
+var Magic = [3]byte{'Q', 'B', 'D'}
 
 const (
 	TypeProbe   = "PROB"
 	TypeControl = "CTRL"
 )
 
+const (
+	SourceCore uint8 = iota + 1
+	SourceMiddlewareCommon
+)
+
 type Handshake struct {
-	Magic   uint16
-	Version uint16
-	Type    string
-	UUID    uuid.UUID
-	Reserved [8]byte
+	Magic    [3]byte
+	Version  uint16
+	Source   uint8
+	Type     string
+	UUID     uuid.UUID
+	Reserved [6]byte
 }
 
-func New(handshakeType string, id uuid.UUID) []byte {
+func New(source uint8, handshakeType string, id uuid.UUID) []byte {
 	result := make([]byte, Size)
-	binary.BigEndian.PutUint16(result[0:2], Magic)
-	binary.BigEndian.PutUint16(result[2:4], Version)
-	copy(result[4:8], handshakeType)
-	copy(result[8:24], id[:])
+	copy(result[0:3], Magic[:])
+	binary.BigEndian.PutUint16(result[3:5], Version)
+	result[5] = source
+	copy(result[6:10], handshakeType)
+	copy(result[10:26], id[:])
 	return result
 }
 
@@ -41,19 +48,21 @@ func Parse(data []byte) (Handshake, error) {
 		return Handshake{}, fmt.Errorf("handshake too short: %d < %d", len(data), Size)
 	}
 
-	magic := binary.BigEndian.Uint16(data[0:2])
+	var magic [3]byte
+	copy(magic[:], data[0:3])
 	if magic != Magic {
-		return Handshake{}, fmt.Errorf("invalid handshake magic: 0x%04x", magic)
+		return Handshake{}, fmt.Errorf("invalid handshake magic: %q", string(magic[:]))
 	}
 
-	var reserved [8]byte
-	copy(reserved[:], data[24:32])
+	var reserved [6]byte
+	copy(reserved[:], data[26:32])
 
 	return Handshake{
 		Magic:    magic,
-		Version:  binary.BigEndian.Uint16(data[2:4]),
-		Type:     string(data[4:8]),
-		UUID:     uuid.UUID(data[8:24]),
+		Version:  binary.BigEndian.Uint16(data[3:5]),
+		Source:   data[5],
+		Type:     string(data[6:10]),
+		UUID:     uuid.UUID(data[10:26]),
 		Reserved: reserved,
 	}, nil
 }

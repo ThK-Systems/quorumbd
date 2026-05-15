@@ -57,7 +57,7 @@ func (ce *CoreEndpoint) tryDial(ctx context.Context, middlewareUUID uuid.UUID) e
 	}
 	defer conn.Close()
 
-	return commonio.WriteFull(conn, handshake.New(handshake.TypeProbe, middlewareUUID))
+	return commonio.WriteFull(conn, handshake.New(handshake.SourceMiddlewareCommon, handshake.TypeProbe, middlewareUUID))
 }
 
 func (ce *CoreEndpoint) Dial(ctx context.Context) (net.Conn, error) {
