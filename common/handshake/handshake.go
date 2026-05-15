@@ -24,6 +24,17 @@ const (
 	SourceMiddlewareCommon
 )
 
+func SourceName(source uint8) string {
+	switch source {
+	case SourceCore:
+		return "CORE"
+	case SourceMiddlewareCommon:
+		return "MIDDLEWARE-COMMON"
+	default:
+		return "UNKNOWN"
+	}
+}
+
 type Handshake struct {
 	Magic    [3]byte
 	Version  uint16

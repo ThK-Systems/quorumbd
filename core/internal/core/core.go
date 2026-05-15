@@ -170,7 +170,7 @@ func (c *Core) handleConnection(ctx context.Context, conn net.Conn) error {
 		"remote", remote,
 		"magic", string(hs.Magic[:]),
 		"version", hs.Version,
-		"source", hs.Source,
+		"source", handshake.SourceName(hs.Source),
 		"type", hs.Type,
 		"uuid", hs.UUID.String(),
 	)
