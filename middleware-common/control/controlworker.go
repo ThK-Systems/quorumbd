@@ -78,7 +78,7 @@ func (cw *ControlWorker) Run(parentCtx context.Context, workerExitCh chan<- work
 		conn.Close()
 	}()
 
-	if err := commonio.WriteFull(conn, handshake.New(handshake.SourceMiddlewareCommon, handshake.TypeControl, middlewareUUID)); err != nil {
+	if err := commonio.WriteFull(conn, handshake.New(handshake.SystemMiddlewareCommon, handshake.TypeControl, middlewareUUID)); err != nil {
 		cw.exit(err, workerExitCh)
 		return
 	}

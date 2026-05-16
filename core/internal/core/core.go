@@ -170,10 +170,18 @@ func (c *Core) handleConnection(ctx context.Context, conn net.Conn) error {
 		"remote", remote,
 		"magic", string(hs.Magic[:]),
 		"version", hs.Version,
-		"source", handshake.SourceName(hs.Source),
+		"system", hs.System.String(),
 		"type", hs.Type,
 		"uuid", hs.UUID.String(),
 	)
+
+	if hs.Version != handshake.Version {
+		return fmt.Errorf("unsupported handshake version %d", hs.Version)
+	}
+
+	if !hs.System.IsKnown() {
+		return fmt.Errorf("unknown handshake system %d", hs.System)
+	}
 
 	switch hs.Type {
 	case handshake.TypeProbe:
